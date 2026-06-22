@@ -8,5 +8,6 @@ python-multipart
 groq
 pypdf
 pydantic-settings
+email-validator
 python-dotenv
 slowapi
