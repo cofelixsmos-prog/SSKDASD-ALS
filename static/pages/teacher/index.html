@@ -98,6 +98,7 @@
   <script type="module">
     import { getToken, getUser, logout } from '/static/js/auth.js';
     import { requireAuth } from '/static/js/guard.js';
+    import { animateStats } from '/static/js/anim.js';
     requireAuth(['teacher', 'admin']);
 
     const token = getToken();
@@ -135,6 +136,7 @@
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('stat-today').textContent = sessions.filter(s => s.date === today).length;
       document.getElementById('stat-total').textContent = sessions.length;
+      animateStats();
 
       // Batches list
       const batchesEl = document.getElementById('batches-list');

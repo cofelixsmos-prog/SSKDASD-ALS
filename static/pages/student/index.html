@@ -98,6 +98,7 @@
   <script type="module">
     import { getToken, getUser, logout } from '/static/js/auth.js';
     import { requireAuth } from '/static/js/guard.js';
+    import { animateStats } from '/static/js/anim.js';
     requireAuth(['student']);
 
     const token = getToken();
@@ -140,6 +141,9 @@
         document.getElementById('stat-present').textContent = s.present;
         document.getElementById('stat-total').textContent = s.total;
         document.getElementById('stat-absent').textContent = s.absent;
+
+        // Duolingo-style count-up on the stat cards
+        animateStats();
 
         if (s.percentage < 75 && s.total > 0) {
           document.getElementById('warning-banner').classList.remove('hidden');

@@ -53,6 +53,10 @@
     .waiting-card{text-align:center;padding:4rem 2rem;max-width:400px;margin:60px auto}
     .waiting-spinner{width:56px;height:56px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1.25rem}
     @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes floatBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    .prestart-card .quiz-icon{animation:floatBounce 2.5s ease-in-out infinite}
+    #begin-btn{animation:fadeSlideUp .4s ease both,btnGlow 2s ease-in-out infinite .5s}
+    @keyframes btnGlow{0%,100%{box-shadow:0 0 0 0 rgba(74,125,255,0)}50%{box-shadow:0 0 0 6px rgba(74,125,255,.12)}}
   </style>
 </head>
 <body>
@@ -76,7 +80,7 @@
     <!-- Lobby waiting screen (after joining, before teacher starts) -->
     <div id="lobby-screen" class="quiz-shell" style="display:none">
       <div class="waiting-card">
-        <div style="font-size:3rem;margin-bottom:1rem">🏫</div>
+        <div style="font-size:3rem;margin-bottom:1rem;animation:floatBounce 2s ease-in-out infinite">🏫</div>
         <h3 style="font-size:1.3rem;font-weight:900;margin-bottom:.5rem">You're in the Lobby!</h3>
         <p style="color:var(--text-light);font-weight:600;font-size:.9rem;margin-bottom:1.25rem">Waiting for your teacher to start the quiz. All students will begin at the same time.</p>
         <div style="background:var(--surface2);border-radius:12px;padding:.85rem 1.2rem;font-size:.85rem;font-weight:700;color:var(--text-mid);margin-bottom:1.5rem">
@@ -262,7 +266,9 @@
           inp.addEventListener('change', () => {
             answers[q.id] = [inp.value];
             area.querySelectorAll('.option-label').forEach((l,i) => {
-              l.classList.toggle('selected', String(i) === inp.value);
+              const sel = String(i) === inp.value;
+              l.classList.toggle('selected', sel);
+              if (sel) { l.classList.remove('selected'); void l.offsetWidth; l.classList.add('selected'); }
             });
           });
         });
@@ -279,11 +285,26 @@
       }
     }
 
+    function animateToQuestion(direction) {
+      const area = document.getElementById('question-area');
+      const card = area.querySelector('.question-card');
+      if (card) {
+        card.style.animation = direction === 'next'
+          ? 'slideOutLeft .2s ease forwards'
+          : 'slideInRightQ .2s ease reverse forwards';
+      }
+      setTimeout(() => {
+        renderQuestion();
+        const newCard = area.querySelector('.question-card');
+        if (newCard) newCard.classList.add(direction === 'next' ? 'q-slide-in' : 'q-slide-in-back');
+      }, 180);
+    }
+
     document.getElementById('prev-btn').addEventListener('click', () => {
-      if (currentIdx > 0) { currentIdx--; renderQuestion(); }
+      if (currentIdx > 0) { currentIdx--; animateToQuestion('prev'); }
     });
     document.getElementById('next-btn').addEventListener('click', () => {
-      if (currentIdx < questions.length - 1) { currentIdx++; renderQuestion(); }
+      if (currentIdx < questions.length - 1) { currentIdx++; animateToQuestion('next'); }
     });
     document.getElementById('submit-btn').addEventListener('click', () => {
       if (!confirm('Submit quiz? You cannot change answers after submitting.')) return;
@@ -359,10 +380,23 @@
 
     function showResults(result) {
       show('results-screen');
-      document.getElementById('res-score').textContent = result.score ?? '—';
-      document.getElementById('res-of').textContent = `/ ${result.total_points ?? '—'} pts`;
       const pct = result.total_points ? Math.round((result.score / result.total_points) * 100) : 0;
+      const scoreEl = document.getElementById('res-score');
+      const circle = document.querySelector('.score-circle');
+
+      document.getElementById('res-of').textContent = `/ ${result.total_points ?? '—'} pts`;
       document.getElementById('res-pct').textContent = `${pct}% · ${result.auto_submitted ? 'Auto-submitted' : 'Submitted'}`;
+
+      // Animate the score circle reveal + count-up
+      if (circle) { circle.classList.remove('score-reveal'); void circle.offsetWidth; circle.classList.add('score-reveal'); }
+      const finalScore = result.score ?? 0;
+      countUp(scoreEl, 0, finalScore, 900);
+
+      // Celebrate if they did well
+      if (pct >= 60) {
+        setTimeout(() => fireConfetti(pct >= 90 ? 120 : 70), 400);
+        if (circle) setTimeout(() => circle.classList.add('celebrate'), 700);
+      }
 
       if (result.results && result.results.length) {
         document.getElementById('res-questions').style.display = 'block';
@@ -391,6 +425,37 @@
 
     function escHtml(str) {
       return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Count-up number animation ──
+    function countUp(el, from, to, duration) {
+      if (!el) return;
+      const start = performance.now();
+      function tick(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+        el.textContent = Math.round(from + (to - from) * eased);
+        if (p < 1) requestAnimationFrame(tick);
+        else el.textContent = to;
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // ── Confetti burst ──
+    function fireConfetti(count) {
+      const colors = ['#58cc02','#4a7dff','#f5a623','#ff4b4b','#a855f7','#06b6d4'];
+      for (let i = 0; i < count; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDuration = (1.8 + Math.random() * 1.4) + 's';
+        piece.style.animationDelay = (Math.random() * 0.3) + 's';
+        piece.style.width = piece.style.height = (7 + Math.random() * 8) + 'px';
+        if (Math.random() > 0.5) piece.style.borderRadius = '50%';
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 3600);
+      }
     }
   </script>
 </body>

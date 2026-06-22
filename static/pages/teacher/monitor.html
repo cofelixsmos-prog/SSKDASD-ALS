@@ -180,6 +180,7 @@
     import { getToken, getUser, logout } from '/static/js/auth.js';
     import { requireAuth } from '/static/js/guard.js';
     import { QuizSocket } from '/static/js/ws.js';
+    import { fireConfetti } from '/static/js/anim.js';
     requireAuth(['teacher', 'admin']);
 
     const token = getToken();
@@ -263,6 +264,7 @@
       // All waiting students move to in-progress
       students.forEach(s => { if (s.status === 'waiting') s.status = 'inprogress'; });
       renderRoster();
+      fireConfetti(60);
     }
 
     function handleWsMessage(msg) {
