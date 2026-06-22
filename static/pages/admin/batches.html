@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Batches</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .batch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem}
+    .batch-card{background:var(--surface);border:2.5px solid var(--border);border-radius:16px;padding:1.25rem;transition:border-color .15s,transform .15s;cursor:pointer}
+    .batch-card:hover{border-color:var(--primary);transform:translateY(-2px)}
+    .batch-name{font-size:1.05rem;font-weight:800;margin-bottom:.5rem}
+    .batch-meta{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem}
+    .section-pill{padding:.2rem .6rem;border-radius:8px;font-size:.7rem;font-weight:800;background:var(--surface2);color:var(--text-light)}
+    .teacher-chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem}
+    .teacher-chip{display:flex;align-items:center;gap:.3rem;padding:.25rem .6rem;background:var(--accent-light,#eef2ff);border-radius:20px;font-size:.72rem;font-weight:700;color:var(--primary)}
+    .teacher-chip button{background:none;border:none;color:var(--primary);cursor:pointer;font-size:.75rem;line-height:1;padding:0;opacity:.6}
+    .teacher-chip button:hover{opacity:1}
+    .drawer-section{margin-bottom:1.25rem}
+    .drawer-section-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:.6rem}
+    .student-row{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1.5px solid var(--border)}
+    .student-row:last-child{border-bottom:none}
+    .accent-light{background:rgba(74,125,255,.08)}
+    select[multiple]{height:auto;padding:.5rem;border-radius:12px;border:2.5px solid var(--input-border);background:var(--bg);color:var(--text);font-family:inherit;font-size:.85rem;font-weight:600;width:100%;outline:none}
+    select[multiple]:focus{border-color:var(--input-focus)}
+    select[multiple] option{padding:.35rem .5rem;border-radius:6px}
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Admin</div>
+        <button class="nav-item" onclick="location.href='/static/pages/admin/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/admin/accounts.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>Accounts
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Batches
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Batches</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span>
+      <button class="theme-toggle" id="theme-toggle"></button>
+      <span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">AD</div>
+          <span class="profile-name" id="topbar-name">Admin</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Administrator</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div id="batch-grid" class="batch-grid">
+      <div class="loading">Loading batches…</div>
+    </div>
+  </main>
+
+  <!-- FAB -->
+  <button class="fab" id="fab-create" title="New Batch">＋</button>
+
+  <!-- Create/Edit Batch Modal -->
+  <div class="modal-overlay hidden" id="batch-modal">
+    <div class="modal" style="max-width:400px">
+      <div class="modal-header">
+        <div class="modal-title" id="batch-modal-title">New Batch</div>
+        <button class="modal-close" id="batch-modal-close">✕</button>
+      </div>
+      <form id="batch-form">
+        <div class="form-group">
+          <label>Batch Name</label>
+          <input type="text" id="b-name" placeholder="e.g. 2024–2027 CSE" required>
+        </div>
+        <p style="font-size:.78rem;color:var(--text-light);font-weight:600;margin-top:-.25rem">Name it by intake year + branch, e.g. "2024-2027 CSE" or "2025 BBA"</p>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="batch-modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="batch-modal-submit">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Batch Modal -->
+  <div class="modal-overlay hidden" id="delete-batch-modal">
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <div class="modal-title">Delete Batch</div>
+        <button class="modal-close" id="delete-batch-close">✕</button>
+      </div>
+      <p style="font-size:.9rem;color:var(--text-light);font-weight:600">Delete <strong id="delete-batch-name"></strong>? Students in this batch will lose their batch assignment.</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="delete-batch-cancel">Cancel</button>
+        <button class="btn btn-danger" id="delete-batch-confirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Detail Drawer -->
+  <div class="drawer-overlay hidden" id="drawer-overlay"></div>
+  <div class="drawer hidden" id="detail-drawer" style="width:480px">
+    <div class="drawer-header">
+      <div class="drawer-title" id="drawer-batch-name">Batch Detail</div>
+      <button class="modal-close" id="drawer-close">✕</button>
+    </div>
+    <div class="drawer-body">
+      <!-- Assign Teacher -->
+      <div class="drawer-section">
+        <div class="drawer-section-title">Assigned Teachers</div>
+        <div id="drawer-teachers" class="teacher-chips" style="margin-bottom:.75rem"></div>
+        <div style="display:flex;gap:.5rem">
+          <select id="drawer-teacher-select" style="flex:1;padding:.6rem .85rem;border:2.5px solid var(--input-border);border-radius:12px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.85rem;font-weight:600;outline:none">
+            <option value="">Select teacher to assign…</option>
+          </select>
+          <button class="btn btn-primary btn-sm" id="assign-teacher-btn">Assign</button>
+        </div>
+      </div>
+
+      <!-- Section tabs + student roster -->
+      <div class="drawer-section">
+        <div class="drawer-section-title">Student Roster</div>
+        <div class="tabs" style="margin-bottom:.75rem">
+          <button class="tab-btn active" data-section="A">Section A</button>
+          <button class="tab-btn" data-section="B">Section B</button>
+          <button class="tab-btn" data-section="C">Section C</button>
+        </div>
+        <div id="drawer-students">
+          <div class="loading">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['admin']);
+
+    const token = getToken();
+    const user = getUser();
+    let batches = [];
+    let allTeachers = [];
+    let activeBatchId = null;
+    let activeSection = 'A';
+    let editingBatchId = null;
+    let deletingBatchId = null;
+
+    // Theme & profile
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', n); localStorage.setItem('theme', n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    // Toast
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Request failed');
+      return data;
+    }
+
+    // Load data
+    async function loadAll() {
+      [batches, allTeachers] = await Promise.all([
+        api('/api/admin/batches'),
+        api('/api/admin/users?role=teacher'),
+      ]);
+      renderBatches();
+    }
+
+    function renderBatches() {
+      const grid = document.getElementById('batch-grid');
+      if (!batches.length) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📚</div><div class="empty-text">No batches yet</div><div class="empty-sub">Click ＋ to create your first batch</div></div>`;
+        return;
+      }
+      grid.innerHTML = batches.map(b => `
+        <div class="batch-card" onclick="openDrawer('${b.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="batch-name">${b.name}</div>
+            <div style="display:flex;gap:.35rem">
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openEditBatch('${b.id}')">✏️</button>
+              <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();openDeleteBatch('${b.id}','${b.name.replace(/'/g,"\\'")}')">🗑️</button>
+            </div>
+          </div>
+          <div class="batch-meta">
+            <span class="section-pill">👥 ${b.student_count} students</span>
+            <span class="section-pill">A: ${b.sections.A}</span>
+            <span class="section-pill">B: ${b.sections.B}</span>
+            <span class="section-pill">C: ${b.sections.C}</span>
+          </div>
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:.35rem">Teachers</div>
+          <div class="teacher-chips">
+            ${b.teachers.length ? b.teachers.map(t => `<span class="teacher-chip">👤 ${t.name}</span>`).join('') : '<span style="font-size:.78rem;color:var(--text-light);font-weight:600">No teachers assigned</span>'}
+          </div>
+        </div>`).join('');
+    }
+
+    // Batch modal
+    document.getElementById('fab-create').addEventListener('click', () => openCreateBatch());
+    document.getElementById('batch-modal-close').addEventListener('click', closeBatchModal);
+    document.getElementById('batch-modal-cancel').addEventListener('click', closeBatchModal);
+
+    function openCreateBatch() {
+      editingBatchId = null;
+      document.getElementById('batch-modal-title').textContent = 'New Batch';
+      document.getElementById('batch-modal-submit').textContent = 'Create';
+      document.getElementById('b-name').value = '';
+      document.getElementById('batch-modal').classList.remove('hidden');
+    }
+
+    window.openEditBatch = function(id) {
+      const b = batches.find(x => x.id === id);
+      if (!b) return;
+      editingBatchId = id;
+      document.getElementById('batch-modal-title').textContent = 'Edit Batch';
+      document.getElementById('batch-modal-submit').textContent = 'Save';
+      document.getElementById('b-name').value = b.name;
+      document.getElementById('batch-modal').classList.remove('hidden');
+    };
+
+    function closeBatchModal() {
+      document.getElementById('batch-modal').classList.add('hidden');
+      editingBatchId = null;
+    }
+
+    document.getElementById('batch-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('batch-modal-submit');
+      btn.disabled = true;
+      try {
+        const name = document.getElementById('b-name').value.trim();
+        if (editingBatchId) {
+          await api(`/api/admin/batches/${editingBatchId}`, { method: 'PATCH', body: JSON.stringify({ name }) });
+          toast('Batch updated');
+        } else {
+          await api('/api/admin/batches', { method: 'POST', body: JSON.stringify({ name }) });
+          toast('Batch created');
+        }
+        closeBatchModal();
+        await loadAll();
+      } catch(err) { toast(err.message, 'error'); }
+      btn.disabled = false;
+      btn.textContent = editingBatchId ? 'Save' : 'Create';
+    });
+
+    // Delete batch
+    window.openDeleteBatch = function(id, name) {
+      deletingBatchId = id;
+      document.getElementById('delete-batch-name').textContent = name;
+      document.getElementById('delete-batch-modal').classList.remove('hidden');
+    };
+    document.getElementById('delete-batch-close').addEventListener('click', () => document.getElementById('delete-batch-modal').classList.add('hidden'));
+    document.getElementById('delete-batch-cancel').addEventListener('click', () => document.getElementById('delete-batch-modal').classList.add('hidden'));
+    document.getElementById('delete-batch-confirm').addEventListener('click', async () => {
+      try {
+        await api(`/api/admin/batches/${deletingBatchId}`, { method: 'DELETE' });
+        document.getElementById('delete-batch-modal').classList.add('hidden');
+        toast('Batch deleted');
+        if (activeBatchId === deletingBatchId) closeDrawer();
+        await loadAll();
+      } catch(err) { toast(err.message, 'error'); }
+    });
+
+    // Drawer
+    window.openDrawer = function(batchId) {
+      activeBatchId = batchId;
+      activeSection = 'A';
+      const b = batches.find(x => x.id === batchId);
+      document.getElementById('drawer-batch-name').textContent = b.name;
+      document.getElementById('drawer-overlay').classList.remove('hidden');
+      document.getElementById('detail-drawer').classList.remove('hidden');
+
+      // Populate teacher select (exclude already assigned)
+      const sel = document.getElementById('drawer-teacher-select');
+      const assignedIds = new Set(b.teachers.map(t => t.id));
+      sel.innerHTML = '<option value="">Select teacher to assign…</option>';
+      allTeachers.filter(t => !assignedIds.has(t.id)).forEach(t => {
+        sel.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+      });
+
+      renderDrawerTeachers(b);
+      document.querySelectorAll('.tab-btn[data-section]').forEach(btn => btn.classList.toggle('active', btn.dataset.section === 'A'));
+      loadDrawerStudents();
+    };
+
+    function closeDrawer() {
+      document.getElementById('drawer-overlay').classList.add('hidden');
+      document.getElementById('detail-drawer').classList.add('hidden');
+      activeBatchId = null;
+    }
+
+    document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+    document.getElementById('drawer-overlay').addEventListener('click', closeDrawer);
+
+    function renderDrawerTeachers(b) {
+      const container = document.getElementById('drawer-teachers');
+      if (!b.teachers.length) { container.innerHTML = '<span style="font-size:.8rem;color:var(--text-light);font-weight:600">None assigned</span>'; return; }
+      container.innerHTML = b.teachers.map(t => `
+        <span class="teacher-chip">👤 ${t.name}
+          <button onclick="removeTeacher('${t.id}')" title="Remove">✕</button>
+        </span>`).join('');
+    }
+
+    document.getElementById('assign-teacher-btn').addEventListener('click', async () => {
+      const sel = document.getElementById('drawer-teacher-select');
+      const tid = sel.value;
+      if (!tid) return;
+      try {
+        await api(`/api/admin/batches/${activeBatchId}/teachers/${tid}`, { method: 'POST' });
+        toast('Teacher assigned');
+        await loadAll();
+        const b = batches.find(x => x.id === activeBatchId);
+        renderDrawerTeachers(b);
+        // Remove from select
+        sel.querySelector(`option[value="${tid}"]`)?.remove();
+        sel.value = '';
+      } catch(err) { toast(err.message, 'error'); }
+    });
+
+    window.removeTeacher = async function(tid) {
+      try {
+        await api(`/api/admin/batches/${activeBatchId}/teachers/${tid}`, { method: 'DELETE' });
+        toast('Teacher removed');
+        await loadAll();
+        const b = batches.find(x => x.id === activeBatchId);
+        renderDrawerTeachers(b);
+        // Add back to select
+        const t = allTeachers.find(x => x.id === tid);
+        if (t) document.getElementById('drawer-teacher-select').innerHTML += `<option value="${t.id}">${t.name}</option>`;
+      } catch(err) { toast(err.message, 'error'); }
+    };
+
+    // Section tabs
+    document.querySelectorAll('.tab-btn[data-section]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn[data-section]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeSection = btn.dataset.section;
+        loadDrawerStudents();
+      });
+    });
+
+    async function loadDrawerStudents() {
+      const container = document.getElementById('drawer-students');
+      container.innerHTML = '<div class="loading">Loading…</div>';
+      try {
+        const students = await api(`/api/admin/batches/${activeBatchId}/students?section=${activeSection}`);
+        if (!students.length) {
+          container.innerHTML = `<div class="empty-state"><div class="empty-icon">🎓</div><div class="empty-text">No students in Section ${activeSection}</div><div class="empty-sub">Assign students from Accounts</div></div>`;
+          return;
+        }
+        container.innerHTML = students.map(s => `
+          <div class="student-row">
+            <div class="student-avatar" style="width:34px;height:34px;font-size:.75rem">${s.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+            <div style="flex:1"><div style="font-size:.88rem;font-weight:700">${s.name}</div><div style="font-size:.75rem;color:var(--text-light);font-weight:600">${s.email}</div></div>
+            <span class="badge ${s.is_active ? 'badge-green' : 'badge-red'}" style="font-size:.65rem">${s.is_active ? 'Active' : 'Inactive'}</span>
+          </div>`).join('');
+      } catch { container.innerHTML = '<div class="empty-state"><div class="empty-text">Failed to load</div></div>'; }
+    }
+
+    loadAll();
+  </script>
+</body>
+</html>

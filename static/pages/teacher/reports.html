@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Reports</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .trend-up{color:var(--success);font-weight:900}
+    .trend-down{color:var(--danger);font-weight:900}
+    .trend-flat{color:var(--text-light);font-weight:700}
+    .student-detail-modal .modal{max-width:700px;width:95vw}
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Teacher</div>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/attendance.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/quizzes.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Reports
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Performance Reports</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">TC</div>
+          <span class="profile-name" id="topbar-name">Teacher</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Teacher</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- Tab bar + filters -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-student" onclick="switchTab('student')">By Student</button>
+        <button class="tab-btn" id="tab-quiz" onclick="switchTab('quiz')">By Quiz</button>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <select class="toolbar-select" id="filter-batch" style="min-width:160px">
+          <option value="">All Batches</option>
+        </select>
+        <select class="toolbar-select" id="filter-section">
+          <option value="">All Sections</option>
+          <option value="A">Section A</option>
+          <option value="B">Section B</option>
+          <option value="C">Section C</option>
+        </select>
+        <button class="btn btn-secondary" id="export-btn">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <!-- By Student tab -->
+    <div id="student-panel">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Batch</th><th>Section</th><th>Attendance %</th><th>Quiz Avg</th><th>Quizzes Taken</th><th>Trend</th><th></th></tr></thead>
+            <tbody id="student-tbody"><tr><td colspan="8" class="loading">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- By Quiz tab -->
+    <div id="quiz-panel" style="display:none">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Quiz Title</th><th>Subject</th><th>Date</th><th>Avg Score</th><th>Highest</th><th>Lowest</th><th>Completion</th><th></th></tr></thead>
+            <tbody id="quiz-tbody"><tr><td colspan="8" class="loading">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Student detail modal -->
+  <div class="modal-overlay hidden student-detail-modal" id="student-modal">
+    <div class="modal" style="max-width:700px;width:95vw;max-height:85vh;overflow-y:auto">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-student-name">Student</div>
+        <button class="modal-close" id="modal-close-btn">✕</button>
+      </div>
+      <div id="modal-body" style="padding:.25rem 0 .5rem">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Quiz breakdown modal -->
+  <div class="modal-overlay hidden" id="quiz-modal">
+    <div class="modal" style="max-width:700px;width:95vw;max-height:85vh;overflow-y:auto">
+      <div class="modal-header">
+        <div class="modal-title" id="quiz-modal-title">Quiz Breakdown</div>
+        <button class="modal-close" id="quiz-modal-close">✕</button>
+      </div>
+      <div id="quiz-modal-body" style="padding:.25rem 0 .5rem">Loading…</div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['teacher', 'admin']);
+
+    const token = getToken();
+    const user = getUser();
+    let activeTab = 'student';
+    let allStudents = [];
+    let allQuizReports = [];
+
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme')==='dark'?'light':'dark'; html.setAttribute('data-theme',n); localStorage.setItem('theme',n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t); setTimeout(() => t.remove(), 4000);
+    }
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      return data;
+    }
+
+    window.switchTab = function(tab) {
+      activeTab = tab;
+      document.getElementById('student-panel').style.display = tab === 'student' ? 'block' : 'none';
+      document.getElementById('quiz-panel').style.display = tab === 'quiz' ? 'block' : 'none';
+      document.getElementById('tab-student').classList.toggle('active', tab === 'student');
+      document.getElementById('tab-quiz').classList.toggle('active', tab === 'quiz');
+      if (tab === 'quiz') loadQuizReports();
+    };
+
+    function trendIcon(trend) {
+      if (!trend) return '<span class="trend-flat">—</span>';
+      if (trend > 0) return `<span class="trend-up">↑ ${trend}%</span>`;
+      return `<span class="trend-down">↓ ${Math.abs(trend)}%</span>`;
+    }
+
+    function pctColor(pct) {
+      return pct >= 75 ? 'var(--success)' : pct >= 50 ? '#f59e0b' : 'var(--danger)';
+    }
+
+    function renderStudents(data) {
+      const tbody = document.getElementById('student-tbody');
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">No students found</div></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(s => `<tr>
+        <td style="font-weight:800">${s.name}</td>
+        <td style="font-size:.82rem;color:var(--text-light)">${s.batch_name || '—'}</td>
+        <td style="text-align:center">${s.section || '—'}</td>
+        <td><span style="font-weight:900;color:${pctColor(s.attendance_pct)}">${s.attendance_pct}%</span></td>
+        <td style="font-weight:800">${s.quiz_avg !== null ? s.quiz_avg+'%' : '—'}</td>
+        <td style="text-align:center;font-weight:800">${s.quizzes_taken}</td>
+        <td>${trendIcon(s.trend)}</td>
+        <td><button class="btn btn-secondary btn-sm" onclick="openStudentDetail('${s.student_id}','${s.name.replace(/'/g,"\\'")}')">View</button></td>
+      </tr>`).join('');
+    }
+
+    window.openStudentDetail = async function(id, name) {
+      document.getElementById('modal-student-name').textContent = name;
+      document.getElementById('modal-body').innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-light)">Loading…</div>';
+      document.getElementById('student-modal').classList.remove('hidden');
+      try {
+        const data = await api(`/api/teacher/reports/students/${id}`);
+        const quizRows = (data.submissions || []).map(s => {
+          const pct = s.total_points ? Math.round((s.score/s.total_points)*100) : 0;
+          return `<tr><td>${s.quiz_title}</td><td>${s.subject}</td><td style="font-size:.78rem">${new Date(s.submitted_at).toLocaleDateString()}</td><td style="font-weight:800">${s.score}/${s.total_points}</td><td><span class="badge ${pct>=75?'badge-green':pct>=50?'badge-yellow':'badge-red'}">${pct}%</span></td></tr>`;
+        }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-light)">No quizzes taken</td></tr>';
+        document.getElementById('modal-body').innerHTML = `
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem">
+            <div style="flex:1;min-width:110px;padding:.8rem 1rem;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center">
+              <div style="font-size:1.8rem;font-weight:900;color:${pctColor(data.attendance_pct)}">${data.attendance_pct}%</div>
+              <div style="font-size:.68rem;font-weight:800;text-transform:uppercase;color:var(--text-light)">Attendance</div>
+            </div>
+            <div style="flex:1;min-width:110px;padding:.8rem 1rem;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center">
+              <div style="font-size:1.8rem;font-weight:900;color:var(--primary)">${data.quiz_avg !== null ? data.quiz_avg+'%' : '—'}</div>
+              <div style="font-size:.68rem;font-weight:800;text-transform:uppercase;color:var(--text-light)">Quiz Avg</div>
+            </div>
+            <div style="flex:1;min-width:110px;padding:.8rem 1rem;background:var(--surface);border:2px solid var(--border);border-radius:12px;text-align:center">
+              <div style="font-size:1.8rem;font-weight:900">${data.quizzes_taken}</div>
+              <div style="font-size:.68rem;font-weight:800;text-transform:uppercase;color:var(--text-light)">Quizzes Taken</div>
+            </div>
+          </div>
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:.5rem">Quiz History</div>
+          <div style="overflow-x:auto">
+            <table class="data-table" style="font-size:.82rem">
+              <thead><tr><th>Quiz</th><th>Subject</th><th>Date</th><th>Score</th><th>%</th></tr></thead>
+              <tbody>${quizRows}</tbody>
+            </table>
+          </div>`;
+      } catch(e) { document.getElementById('modal-body').innerHTML = `<p style="color:var(--danger);padding:1rem">${e.message}</p>`; }
+    };
+
+    document.getElementById('modal-close-btn').addEventListener('click', () => document.getElementById('student-modal').classList.add('hidden'));
+
+    // Quiz reports
+    async function loadQuizReports() {
+      const tbody = document.getElementById('quiz-tbody');
+      tbody.innerHTML = '<tr><td colspan="8" class="loading">Loading…</td></tr>';
+      try {
+        const batchId = document.getElementById('filter-batch').value;
+        const data = await api(`/api/teacher/reports/quizzes${batchId ? '?batch_id='+batchId : ''}`);
+        allQuizReports = data;
+        renderQuizReports(data);
+      } catch(e) { tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);text-align:center;padding:1rem">${e.message}</td></tr>`; }
+    }
+
+    function renderQuizReports(data) {
+      const tbody = document.getElementById('quiz-tbody');
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No quiz data yet</div></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(q => `<tr>
+        <td style="font-weight:800">${q.title}</td>
+        <td style="color:var(--text-light)">${q.subject}</td>
+        <td style="font-size:.78rem;color:var(--text-light)">${q.created_at ? new Date(q.created_at).toLocaleDateString() : '—'}</td>
+        <td style="font-weight:800">${q.avg_score !== null ? q.avg_score+'%' : '—'}</td>
+        <td style="color:var(--success);font-weight:800">${q.highest !== null ? q.highest+'%' : '—'}</td>
+        <td style="color:var(--danger);font-weight:800">${q.lowest !== null ? q.lowest+'%' : '—'}</td>
+        <td><span class="badge badge-muted">${q.completion_rate}%</span></td>
+        <td><button class="btn btn-secondary btn-sm" onclick="openQuizBreakdown('${q.quiz_id}','${q.title.replace(/'/g,"\\'")}')">Details</button></td>
+      </tr>`).join('');
+    }
+
+    window.openQuizBreakdown = async function(quizId, title) {
+      document.getElementById('quiz-modal-title').textContent = title;
+      document.getElementById('quiz-modal-body').innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text-light)">Loading…</div>';
+      document.getElementById('quiz-modal').classList.remove('hidden');
+      try {
+        const data = await api(`/api/teacher/reports/quizzes/${quizId}`);
+        const rows = (data.students || []).map(s => `<tr>
+          <td style="font-weight:800">${s.name}</td>
+          <td style="font-weight:800">${s.score} / ${s.total_points}</td>
+          <td><span class="badge ${s.pct>=75?'badge-green':s.pct>=50?'badge-yellow':'badge-red'}">${s.pct}%</span></td>
+          <td>${s.cheat_flag_count > 0 ? `<span class="badge badge-red">⚠ ${s.cheat_flag_count}</span>` : '<span style="color:var(--text-light)">—</span>'}</td>
+          <td>${s.violation_confirmed ? '<span class="badge badge-red">Confirmed</span>' : s.cheat_flag_count > 0 ? `<button class="btn btn-danger btn-sm" onclick="confirmViolation('${s.submission_id}')">Flag</button>` : '—'}</td>
+        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-light)">No submissions</td></tr>';
+        document.getElementById('quiz-modal-body').innerHTML = `
+          <div style="overflow-x:auto">
+            <table class="data-table" style="font-size:.82rem">
+              <thead><tr><th>Student</th><th>Score</th><th>%</th><th>Cheat Flags</th><th>Violation</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      } catch(e) { document.getElementById('quiz-modal-body').innerHTML = `<p style="color:var(--danger);padding:1rem">${e.message}</p>`; }
+    };
+
+    window.confirmViolation = async function(submissionId) {
+      try {
+        await fetch(`/api/teacher/reports/submissions/${submissionId}/violation`, {
+          method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        });
+        toast('Violation confirmed');
+        // Re-render by closing and letting user reopen
+      } catch(e) { toast('Failed', 'error'); }
+    };
+
+    document.getElementById('quiz-modal-close').addEventListener('click', () => document.getElementById('quiz-modal').classList.add('hidden'));
+
+    // Export CSV — fetch with auth header, download as blob
+    document.getElementById('export-btn').addEventListener('click', async () => {
+      const batchId = document.getElementById('filter-batch').value;
+      const section = document.getElementById('filter-section').value;
+      const params = new URLSearchParams();
+      if (batchId) params.set('batch_id', batchId);
+      if (section) params.set('section', section);
+      try {
+        const res = await fetch(`/api/teacher/reports/students/export?${params}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) { toast('Export failed', 'error'); return; }
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'student_report.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch(e) { toast('Export failed', 'error'); }
+    });
+
+    // Filters
+    ['filter-batch','filter-section'].forEach(id => {
+      document.getElementById(id).addEventListener('change', loadStudentData);
+    });
+
+    async function loadBatches() {
+      try {
+        const batches = await api('/api/attendance/my-batches');
+        const sel = document.getElementById('filter-batch');
+        batches.forEach(b => {
+          const opt = document.createElement('option'); opt.value = b.id; opt.textContent = b.name;
+          sel.appendChild(opt);
+        });
+      } catch {}
+    }
+
+    async function loadStudentData() {
+      const tbody = document.getElementById('student-tbody');
+      tbody.innerHTML = '<tr><td colspan="8" class="loading">Loading…</td></tr>';
+      try {
+        const batchId = document.getElementById('filter-batch').value;
+        const section = document.getElementById('filter-section').value;
+        let url = '/api/teacher/reports/students';
+        const params = new URLSearchParams();
+        if (batchId) params.set('batch_id', batchId);
+        if (section) params.set('section', section);
+        if (params.toString()) url += '?' + params.toString();
+        allStudents = await api(url);
+        renderStudents(allStudents);
+      } catch(e) {
+        tbody.innerHTML = `<tr><td colspan="8" style="color:var(--danger);text-align:center;padding:1rem">${e.message}</td></tr>`;
+      }
+    }
+
+    loadBatches();
+    loadStudentData();
+  </script>
+</body>
+</html>

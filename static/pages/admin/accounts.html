@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Accounts</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Admin</div>
+        <button class="nav-item" onclick="location.href='/static/pages/admin/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item active" onclick="location.href='/static/pages/admin/accounts.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Accounts
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/admin/batches.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Batches
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Accounts</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span>
+      <button class="theme-toggle" id="theme-toggle"></button>
+      <span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">AD</div>
+          <span class="profile-name" id="topbar-name">Admin</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header">
+            <div class="dd-name" id="dd-name"></div>
+            <div class="dd-class">Administrator</div>
+          </div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- Filter Bar -->
+    <div class="toolbar">
+      <input type="text" class="toolbar-search" id="search" placeholder="Search name or email…">
+      <select class="toolbar-select" id="filter-role">
+        <option value="">All Roles</option>
+        <option value="admin">Admin</option>
+        <option value="teacher">Teacher</option>
+        <option value="student">Student</option>
+        <option value="parent">Parent</option>
+      </select>
+      <select class="toolbar-select" id="filter-batch">
+        <option value="">All Batches</option>
+      </select>
+      <select class="toolbar-select" id="filter-section">
+        <option value="">All Sections</option>
+        <option value="A">Section A</option>
+        <option value="B">Section B</option>
+        <option value="C">Section C</option>
+      </select>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Batch</th>
+              <th>Section</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="7" class="loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- FAB -->
+  <button class="fab" id="fab-create" title="Create Account">＋</button>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">Create Account</div>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <form id="account-form">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="f-name" required>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="f-email" required>
+        </div>
+        <div class="form-group" id="f-password-group">
+          <label>Password</label>
+          <input type="password" id="f-password" placeholder="Leave blank to keep current">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select id="f-role" required>
+            <option value="">Select role…</option>
+            <option value="admin">Admin</option>
+            <option value="teacher">Teacher</option>
+            <option value="student">Student</option>
+            <option value="parent">Parent</option>
+          </select>
+        </div>
+        <!-- Student: single batch + section -->
+        <div class="form-group hidden" id="f-batch-group">
+          <label>Batch</label>
+          <select id="f-batch">
+            <option value="">No Batch</option>
+          </select>
+        </div>
+        <div class="form-group hidden" id="f-section-group">
+          <label>Section</label>
+          <select id="f-section">
+            <option value="">No Section</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+        </div>
+        <!-- Teacher: multi-batch -->
+        <div class="form-group hidden" id="f-teacher-batches-group">
+          <label>Batches Teaching <span style="font-weight:600;color:var(--text-light)">(hold Ctrl/Cmd to select multiple)</span></label>
+          <select id="f-teacher-batches" multiple style="height:120px;padding:.5rem;border-radius:12px;border:2.5px solid var(--input-border);background:var(--bg);color:var(--text);font-family:inherit;font-size:.88rem;font-weight:600;width:100%;outline:none"></select>
+        </div>
+        <div class="form-group hidden" id="f-linked-group">
+          <label>Linked Student</label>
+          <select id="f-linked">
+            <option value="">Select student…</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Modal -->
+  <div class="modal-overlay hidden" id="delete-overlay">
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <div class="modal-title">Delete Account</div>
+        <button class="modal-close" id="delete-close">✕</button>
+      </div>
+      <p style="font-size:.9rem;color:var(--text-light);font-weight:600">Are you sure you want to delete <strong id="delete-name"></strong>? This cannot be undone.</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="delete-cancel">Cancel</button>
+        <button class="btn btn-danger" id="delete-confirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['admin']);
+
+    const token = getToken();
+    const user = getUser();
+    let allUsers = [];
+    let batches = [];
+    let editingId = null;
+    let deletingId = null;
+
+    // Theme & profile
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => {
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => {
+      document.getElementById('profile-dropdown').classList.toggle('hidden');
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden');
+    });
+
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) sidebarToggle.style.display = 'flex';
+    sidebarToggle.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    // Toast
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.textContent = msg;
+      c.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
+    }
+
+    // API helper
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Request failed');
+      return data;
+    }
+
+    // Load batches
+    async function loadBatches() {
+      try {
+        const res = await fetch('/api/admin/batches', { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          batches = await res.json();
+          const sel = document.getElementById('filter-batch');
+          const fsel = document.getElementById('f-batch');
+          const tmsel = document.getElementById('f-teacher-batches');
+          // Reset first to avoid duplicates on reload
+          sel.innerHTML = '<option value="">All Batches</option>';
+          fsel.innerHTML = '<option value="">No Batch</option>';
+          tmsel.innerHTML = '';
+          batches.forEach(b => {
+            sel.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+            fsel.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+            tmsel.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+          });
+        }
+      } catch(e) { console.error('loadBatches:', e); }
+    }
+
+    // Load users
+    async function loadUsers() {
+      const res = await fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } });
+      allUsers = await res.json();
+      renderTable(allUsers);
+    }
+
+    function roleBadge(role) {
+      return { admin: 'badge-primary', teacher: 'badge-primary', student: 'badge-green', parent: 'badge-yellow' }[role] || 'badge-muted';
+    }
+
+    function renderTable(users) {
+      const tbody = document.getElementById('users-tbody');
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">No accounts found</div></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td><strong>${u.name}</strong></td>
+          <td style="color:var(--text-light);font-size:.82rem">${u.email}</td>
+          <td><span class="badge ${roleBadge(u.role)}">${u.role}</span></td>
+          <td style="color:var(--text-light);font-size:.82rem">${batches.find(b=>b.id&&u.batch_id&&b.id.toLowerCase()===u.batch_id.toLowerCase())?.name || '—'}</td>
+          <td style="color:var(--text-light)">${u.section || '—'}</td>
+          <td><span class="badge ${u.is_active ? 'badge-green' : 'badge-red'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <div style="display:flex;gap:.4rem">
+              <button class="btn btn-secondary btn-sm" onclick="openEdit('${u.id}')">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="openDelete('${u.id}','${u.name.replace(/'/g,"\\'")}')">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    // Filters
+    function applyFilters() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const role = document.getElementById('filter-role').value;
+      const batch = document.getElementById('filter-batch').value;
+      const section = document.getElementById('filter-section').value;
+      renderTable(allUsers.filter(u =>
+        (!search || u.name.toLowerCase().includes(search) || u.email.toLowerCase().includes(search)) &&
+        (!role || u.role === role) &&
+        (!batch || (u.batch_id && u.batch_id.toLowerCase() === batch.toLowerCase())) &&
+        (!section || u.section === section)
+      ));
+    }
+    ['search','filter-role','filter-batch','filter-section'].forEach(id =>
+      document.getElementById(id).addEventListener('input', applyFilters));
+
+    // Modal logic
+    const overlay = document.getElementById('modal-overlay');
+    const form = document.getElementById('account-form');
+
+    function openCreate() {
+      editingId = null;
+      form.reset();
+      document.getElementById('modal-title').textContent = 'Create Account';
+      document.getElementById('modal-submit').textContent = 'Create';
+      document.getElementById('f-password-group').querySelector('input').required = true;
+      document.getElementById('f-password-group').querySelector('input').placeholder = '';
+      updateRoleFields('');
+      overlay.classList.remove('hidden');
+    }
+
+    window.openEdit = async function(id) {
+      const u = allUsers.find(x => x.id === id);
+      if (!u) return;
+      editingId = id;
+      document.getElementById('modal-title').textContent = 'Edit Account';
+      document.getElementById('modal-submit').textContent = 'Save';
+      document.getElementById('f-name').value = u.name;
+      document.getElementById('f-email').value = u.email;
+      document.getElementById('f-role').value = u.role;
+      document.getElementById('f-batch').value = u.batch_id || '';
+      document.getElementById('f-section').value = u.section || '';
+      document.getElementById('f-linked').value = u.linked_student_id || '';
+      document.getElementById('f-password-group').querySelector('input').required = false;
+      document.getElementById('f-password-group').querySelector('input').placeholder = 'Leave blank to keep current';
+      updateRoleFields(u.role);
+      // Pre-select teacher batches
+      if (u.role === 'teacher') {
+        try {
+          const assignedBatchIds = await api(`/api/admin/users/${id}/batches`);
+          const tmsel = document.getElementById('f-teacher-batches');
+          Array.from(tmsel.options).forEach(opt => { opt.selected = assignedBatchIds.includes(opt.value); });
+        } catch {}
+      }
+      overlay.classList.remove('hidden');
+    };
+
+    window.openDelete = function(id, name) {
+      deletingId = id;
+      document.getElementById('delete-name').textContent = name;
+      document.getElementById('delete-overlay').classList.remove('hidden');
+    };
+
+    function closeModal() { overlay.classList.add('hidden'); editingId = null; }
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('fab-create').addEventListener('click', openCreate);
+
+    document.getElementById('delete-close').addEventListener('click', () => document.getElementById('delete-overlay').classList.add('hidden'));
+    document.getElementById('delete-cancel').addEventListener('click', () => document.getElementById('delete-overlay').classList.add('hidden'));
+    document.getElementById('delete-confirm').addEventListener('click', async () => {
+      if (!deletingId) return;
+      try {
+        await api(`/api/admin/users/${deletingId}`, { method: 'DELETE' });
+        document.getElementById('delete-overlay').classList.add('hidden');
+        toast('Account deleted');
+        await loadUsers();
+      } catch(e) { toast(e.message, 'error'); }
+    });
+
+    // Role-dependent fields
+    function updateRoleFields(role) {
+      const batchGrp = document.getElementById('f-batch-group');
+      const secGrp = document.getElementById('f-section-group');
+      const linkedGrp = document.getElementById('f-linked-group');
+      const teacherBatchGrp = document.getElementById('f-teacher-batches-group');
+      // student: single batch + section
+      batchGrp.classList.toggle('hidden', role !== 'student');
+      secGrp.classList.toggle('hidden', role !== 'student');
+      // teacher: multi-batch select
+      teacherBatchGrp.classList.toggle('hidden', role !== 'teacher');
+      // parent: linked student
+      linkedGrp.classList.toggle('hidden', role !== 'parent');
+      if (role === 'parent') {
+        const sel = document.getElementById('f-linked');
+        sel.innerHTML = '<option value="">Select student…</option>';
+        allUsers.filter(u => u.role === 'student').forEach(s => {
+          sel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+        });
+      }
+      if (role === 'teacher') {
+        // reset multi-select
+        Array.from(document.getElementById('f-teacher-batches').options).forEach(o => o.selected = false);
+      }
+    }
+    document.getElementById('f-role').addEventListener('change', e => updateRoleFields(e.target.value));
+
+    // Submit
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('modal-submit');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-inline"></span>';
+      const role = document.getElementById('f-role').value;
+      const password = document.getElementById('f-password-group').querySelector('input').value;
+      const teacherBatchIds = role === 'teacher'
+        ? Array.from(document.getElementById('f-teacher-batches').selectedOptions).map(o => o.value)
+        : null;
+      const payload = {
+        name: document.getElementById('f-name').value.trim(),
+        email: document.getElementById('f-email').value.trim(),
+        role,
+        batch_id: role === 'student' ? (document.getElementById('f-batch').value || null) : null,
+        batch_ids: teacherBatchIds,
+        section: role === 'student' ? (document.getElementById('f-section').value || null) : null,
+        linked_student_id: role === 'parent' ? (document.getElementById('f-linked').value || null) : null,
+      };
+      try {
+        if (editingId) {
+          if (password) await api(`/api/admin/users/${editingId}/reset-password`, { method: 'POST', body: JSON.stringify({ new_password: password }) });
+          await api(`/api/admin/users/${editingId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+          toast('Account updated');
+        } else {
+          if (!password) { toast('Password is required', 'error'); btn.disabled=false; btn.textContent='Create'; return; }
+          await api('/api/admin/users', { method: 'POST', body: JSON.stringify({ ...payload, password }) });
+          toast('Account created');
+        }
+        closeModal();
+        await loadUsers();
+      } catch(err) {
+        toast(err.message, 'error');
+      }
+      btn.disabled = false;
+      btn.textContent = editingId ? 'Save' : 'Create';
+    });
+
+    await loadBatches();
+    await loadUsers();
+  </script>
+</body>
+</html>

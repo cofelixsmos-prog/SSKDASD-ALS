@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — My Quizzes</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Teacher</div>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/attendance.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/reports.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Reports
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Quizzes</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">TC</div>
+          <span class="profile-name" id="topbar-name">Teacher</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Teacher</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="toolbar">
+      <input class="toolbar-search" id="search" placeholder="Search quizzes…">
+      <select class="toolbar-select" id="filter-status">
+        <option value="">All Status</option>
+        <option value="draft">Draft</option>
+        <option value="active">Active</option>
+        <option value="closed">Closed</option>
+      </select>
+      <button class="btn btn-primary" onclick="location.href='/static/pages/teacher/quiz-builder.html'">＋ New Quiz</button>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th><th>Subject</th><th>Questions</th><th>Timer</th><th>Status</th><th>Code</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="quiz-tbody"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay hidden" id="delete-modal">
+    <div class="modal" style="max-width:360px">
+      <div class="modal-header"><div class="modal-title">Delete Quiz</div><button class="modal-close" id="delete-close">✕</button></div>
+      <p style="font-size:.9rem;color:var(--text-light);font-weight:600">Delete <strong id="delete-name"></strong>? This cannot be undone.</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="delete-cancel">Cancel</button>
+        <button class="btn btn-danger" id="delete-confirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['teacher', 'admin']);
+
+    const token = getToken();
+    const user = getUser();
+    let allQuizzes = [];
+    let deletingId = null;
+
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', n); localStorage.setItem('theme', n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t); setTimeout(() => t.remove(), 3500);
+    }
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      return data;
+    }
+
+    function statusBadge(s) {
+      return s === 'active' ? 'badge-green' : s === 'closed' ? 'badge-red' : 'badge-muted';
+    }
+
+    function renderTable(quizzes) {
+      const tbody = document.getElementById('quiz-tbody');
+      if (!quizzes.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No quizzes yet</div><div class="empty-sub">Click "+ New Quiz" to create one</div></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = quizzes.map(q => `
+        <tr>
+          <td><strong>${q.title}</strong></td>
+          <td style="color:var(--text-light)">${q.subject}</td>
+          <td style="text-align:center;font-weight:800">${q.question_count}</td>
+          <td style="text-align:center">${q.timer_minutes}m</td>
+          <td><span class="badge ${statusBadge(q.status)}">${q.status}</span></td>
+          <td><code style="font-size:.85rem;font-weight:800;letter-spacing:2px;background:var(--surface2);padding:.2rem .5rem;border-radius:6px">${q.code}</code></td>
+          <td>
+            <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+              ${q.status !== 'active' ? `<button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/teacher/quiz-builder.html?id=${q.id}'">Edit</button>` : ''}
+              ${q.status === 'draft' ? `<button class="btn btn-primary btn-sm" onclick="launchQuiz('${q.id}','${q.title.replace(/'/g,"\\'")}')">▶ Launch</button>` : ''}
+              ${q.status === 'active' ? `<button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/teacher/monitor.html?id=${q.id}'">📡 Monitor</button><button class="btn btn-danger btn-sm" onclick="closeQuiz('${q.id}')">■ Close</button>` : ''}
+              <button class="btn btn-danger btn-sm" onclick="openDelete('${q.id}','${q.title.replace(/'/g,"\\'")}')">🗑</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    window.launchQuiz = async function(id, title) {
+      if (!confirm(`Launch "${title}"? Students can join immediately.`)) return;
+      try {
+        const r = await api(`/api/quizzes/${id}/launch`, { method: 'POST' });
+        toast(`Launched! Code: ${r.code}`);
+        await load();
+      } catch(e) { toast(e.message, 'error'); }
+    };
+
+    window.closeQuiz = async function(id) {
+      if (!confirm('Close quiz? Students cannot submit after this.')) return;
+      try {
+        await api(`/api/quizzes/${id}/close`, { method: 'POST' });
+        toast('Quiz closed');
+        await load();
+      } catch(e) { toast(e.message, 'error'); }
+    };
+
+    window.openDelete = function(id, name) {
+      deletingId = id;
+      document.getElementById('delete-name').textContent = name;
+      document.getElementById('delete-modal').classList.remove('hidden');
+    };
+    document.getElementById('delete-close').addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden'));
+    document.getElementById('delete-cancel').addEventListener('click', () => document.getElementById('delete-modal').classList.add('hidden'));
+    document.getElementById('delete-confirm').addEventListener('click', async () => {
+      try {
+        await api(`/api/quizzes/${deletingId}`, { method: 'DELETE' });
+        document.getElementById('delete-modal').classList.add('hidden');
+        toast('Quiz deleted');
+        await load();
+      } catch(e) { toast(e.message, 'error'); }
+    });
+
+    ['search','filter-status'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        const s = document.getElementById('search').value.toLowerCase();
+        const st = document.getElementById('filter-status').value;
+        renderTable(allQuizzes.filter(q =>
+          (!s || q.title.toLowerCase().includes(s) || q.subject.toLowerCase().includes(s)) &&
+          (!st || q.status === st)
+        ));
+      });
+    });
+
+    async function load() {
+      allQuizzes = await api('/api/quizzes');
+      renderTable(allQuizzes);
+    }
+    load();
+  </script>
+</body>
+</html>

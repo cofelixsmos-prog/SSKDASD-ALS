@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: Scholarly
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python seed.py && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./edutrack.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 480
+      - key: GROQ_API_KEY
+        value: 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
+      - key: GROQ_MODEL
+        value: llama-3.1-8b-instant
+      - key: APP_NAME
+        value: Scholarly
+      - key: DEBUG
+        value: false

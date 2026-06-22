@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Quiz Monitor</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .monitor-header-card{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;padding:1.25rem 1.5rem;background:var(--surface);border:2.5px solid var(--border);border-radius:16px;margin-bottom:1rem}
+    .quiz-code-big{font-family:'Nunito',sans-serif;font-size:2.5rem;font-weight:900;letter-spacing:.4rem;color:var(--primary);background:var(--surface2);padding:.35rem 1.2rem;border-radius:12px;cursor:pointer;user-select:all;transition:background .15s}
+    .quiz-code-big:hover{background:var(--accent-light)}
+    .code-copy-hint{font-size:.7rem;color:var(--text-light);margin-top:.2rem;text-align:center}
+    .monitor-stats{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+    .monitor-stat{flex:1;min-width:110px;padding:.9rem 1.1rem;background:var(--surface);border:2.5px solid var(--border);border-radius:14px;text-align:center}
+    .monitor-stat-val{font-size:2rem;font-weight:900;line-height:1}
+    .monitor-stat-lbl{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-top:.2rem}
+    .status-waiting{color:var(--text-light)}
+    .status-inprogress{color:#f59e0b}
+    .status-submitted{color:var(--success)}
+    .cheat-badge{display:inline-flex;align-items:center;justify-content:center;background:#ff4b4b22;color:var(--danger);font-weight:800;font-size:.78rem;min-width:24px;height:22px;border-radius:8px;padding:0 .4rem;cursor:help}
+    .cheat-zero{color:var(--text-light);font-weight:600}
+    .live-dot{width:10px;height:10px;border-radius:50%;background:var(--success);animation:pulse 1.2s infinite;display:inline-block;margin-right:.4rem}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Teacher</div>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/attendance.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/reports.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Reports
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Live Monitor</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">TC</div>
+          <span class="profile-name" id="topbar-name">Teacher</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Teacher</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Quiz info card -->
+    <div class="monitor-header-card" id="quiz-info-card">
+      <div>
+        <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:.25rem"><span class="live-dot"></span>Live Quiz</div>
+        <div style="font-size:1.4rem;font-weight:900;color:var(--text)" id="quiz-title">Loading…</div>
+        <div style="font-size:.85rem;font-weight:600;color:var(--text-light)" id="quiz-subject"></div>
+      </div>
+      <div style="text-align:center">
+        <div class="quiz-code-big" id="quiz-code" title="Click to copy" onclick="copyCode()">------</div>
+        <div class="code-copy-hint">Click code to copy · Share with students</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.5rem">
+        <div style="font-size:.8rem;font-weight:700;color:var(--text-light)">⏱ <span id="quiz-timer">--</span> min</div>
+        <button class="btn btn-primary" id="start-quiz-btn" style="background:#58cc02;border-color:#3a8c00;min-width:140px">▶ Start Quiz</button>
+        <button class="btn btn-danger hidden" id="close-quiz-btn" style="min-width:140px">■ Close Quiz</button>
+        <button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/teacher/quizzes.html'">← Quizzes</button>
+      </div>
+    </div>
+
+    <!-- Lobby banner (shown before start) -->
+    <div id="lobby-banner" style="background:#f59e0b18;border:2px solid #f59e0b55;border-radius:14px;padding:.9rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+      <div style="font-size:.9rem;font-weight:800;color:#b45309">⏳ Waiting room — students are joining. Click <strong>Start Quiz</strong> when everyone is ready.</div>
+      <div style="font-size:.8rem;font-weight:700;color:#b45309">All students will begin simultaneously with the same timer.</div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="monitor-stats">
+      <div class="monitor-stat">
+        <div class="monitor-stat-val" id="stat-total">0</div>
+        <div class="monitor-stat-lbl" id="stat-total-lbl">In Lobby</div>
+      </div>
+      <div class="monitor-stat">
+        <div class="monitor-stat-val status-inprogress" id="stat-inprogress">0</div>
+        <div class="monitor-stat-lbl">In Progress</div>
+      </div>
+      <div class="monitor-stat">
+        <div class="monitor-stat-val status-submitted" id="stat-submitted">0</div>
+        <div class="monitor-stat-lbl">Submitted</div>
+      </div>
+      <div class="monitor-stat">
+        <div class="monitor-stat-val" style="color:var(--danger)" id="stat-cheats">0</div>
+        <div class="monitor-stat-lbl">Cheat Flags</div>
+      </div>
+    </div>
+
+    <!-- Student roster -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:.85rem 1.2rem;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:.85rem;font-weight:800">Student Roster</div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--text-light)">Updates in real-time</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Cheat Flags</th>
+              <th>Joined At</th>
+            </tr>
+          </thead>
+          <tbody id="student-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-light);font-weight:600">Waiting for students to join…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Start quiz confirmation modal -->
+  <div class="modal-overlay hidden" id="start-modal">
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <div class="modal-title">Start Quiz?</div>
+        <button class="modal-close" id="start-modal-x">✕</button>
+      </div>
+      <p style="font-size:.9rem;color:var(--text-light);font-weight:600;margin-bottom:.5rem">All <strong id="start-student-count">0</strong> students in the lobby will receive the start signal simultaneously and their timers will begin at the same moment.</p>
+      <p style="font-size:.85rem;color:var(--text-light);font-weight:600;margin-bottom:1.25rem">Students who join after the quiz starts will be turned away.</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="start-cancel-btn">Cancel</button>
+        <button class="btn btn-primary" id="start-confirm-btn" style="background:#58cc02;border-color:#3a8c00">▶ Start Quiz</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Close quiz confirmation modal -->
+  <div class="modal-overlay hidden" id="close-modal">
+    <div class="modal" style="max-width:380px">
+      <div class="modal-header">
+        <div class="modal-title">Close Quiz?</div>
+        <button class="modal-close" id="close-modal-x">✕</button>
+      </div>
+      <p style="font-size:.9rem;color:var(--text-light);font-weight:600;margin-bottom:1.25rem">All students will be auto-submitted. Scores will be recorded and students can view results if "Show Answers on Close" is enabled.</p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="close-cancel-btn">Cancel</button>
+        <button class="btn btn-danger" id="close-confirm-btn">■ Close Quiz</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    import { QuizSocket } from '/static/js/ws.js';
+    requireAuth(['teacher', 'admin']);
+
+    const token = getToken();
+    const user = getUser();
+    let quizId = null;
+    let socket = null;
+    let quizStarted = false;
+
+    // students map: student_id -> {name, status, cheatFlags[], joinedAt}
+    const students = new Map();
+
+    // Theme & profile
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', n); localStorage.setItem('theme', n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t); setTimeout(() => t.remove(), 4000);
+    }
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      return data;
+    }
+
+    function renderRoster() {
+      const tbody = document.getElementById('student-tbody');
+      if (!students.size) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text-light);font-weight:600">Waiting for students to join…</td></tr>';
+        updateStats(); return;
+      }
+      const rows = [...students.values()].sort((a,b) => a.joinedAt - b.joinedAt);
+      tbody.innerHTML = rows.map((s, i) => {
+        const statusClass = s.status === 'submitted' ? 'status-submitted' : s.status === 'inprogress' ? 'status-inprogress' : 'status-waiting';
+        const statusLabel = s.status === 'submitted' ? '✓ Submitted' : s.status === 'inprogress' ? '◉ In Progress' : '⌛ In Lobby';
+        const cheats = s.cheatFlags.length;
+        const cheatEl = cheats > 0
+          ? `<span class="cheat-badge" title="${s.cheatFlags.map(ts => new Date(ts).toLocaleTimeString()).join('\n')}">⚠ ${cheats}</span>`
+          : `<span class="cheat-zero">—</span>`;
+        const joined = new Date(s.joinedAt).toLocaleTimeString();
+        return `<tr><td style="font-weight:800;color:var(--text-light)">${i+1}</td><td style="font-weight:700">${s.name}</td><td class="${statusClass}" style="font-weight:800">${statusLabel}</td><td>${cheatEl}</td><td style="font-size:.8rem;color:var(--text-light)">${joined}</td></tr>`;
+      }).join('');
+      updateStats();
+    }
+
+    function updateStats() {
+      const vals = [...students.values()];
+      const inProgress = vals.filter(s => s.status === 'inprogress').length;
+      const submitted = vals.filter(s => s.status === 'submitted').length;
+      // Before start: total shows lobby count. After start: shows in-progress.
+      document.getElementById('stat-total').textContent = quizStarted ? inProgress : vals.length;
+      document.getElementById('stat-inprogress').textContent = inProgress;
+      document.getElementById('stat-submitted').textContent = submitted;
+      const totalCheats = vals.reduce((n, s) => n + s.cheatFlags.length, 0);
+      document.getElementById('stat-cheats').textContent = totalCheats;
+    }
+
+    function markQuizStarted() {
+      quizStarted = true;
+      document.getElementById('lobby-banner').style.display = 'none';
+      document.getElementById('start-quiz-btn').classList.add('hidden');
+      document.getElementById('close-quiz-btn').classList.remove('hidden');
+      document.getElementById('stat-total-lbl').textContent = 'In Progress';
+      // All waiting students move to in-progress
+      students.forEach(s => { if (s.status === 'waiting') s.status = 'inprogress'; });
+      renderRoster();
+    }
+
+    function handleWsMessage(msg) {
+      if (msg.type === 'student_join') {
+        if (!students.has(msg.student_id)) {
+          students.set(msg.student_id, {
+            name: msg.name || 'Student',
+            status: quizStarted ? 'inprogress' : 'waiting',
+            cheatFlags: [],
+            joinedAt: Date.now(),
+          });
+        } else {
+          students.get(msg.student_id).status = quizStarted ? 'inprogress' : 'waiting';
+        }
+        renderRoster();
+      } else if (msg.type === 'quiz_start') {
+        markQuizStarted();
+      } else if (msg.type === 'student_submit') {
+        if (students.has(msg.student_id)) {
+          students.get(msg.student_id).status = 'submitted';
+        }
+        renderRoster();
+      } else if (msg.type === 'cheat_flag') {
+        if (students.has(msg.student_id)) {
+          students.get(msg.student_id).cheatFlags.push(msg.timestamp || new Date().toISOString());
+        } else {
+          students.set(msg.student_id, {
+            name: 'Student',
+            status: 'inprogress',
+            cheatFlags: [msg.timestamp || new Date().toISOString()],
+            joinedAt: Date.now(),
+          });
+        }
+        renderRoster();
+      } else if (msg.type === 'quiz_close') {
+        toast('Quiz closed — all students auto-submitted');
+        setTimeout(() => location.href = '/static/pages/teacher/quizzes.html', 2000);
+      }
+    }
+
+    window.copyCode = function() {
+      const code = document.getElementById('quiz-code').textContent;
+      navigator.clipboard?.writeText(code).then(() => toast('Code copied!')).catch(() => {});
+    };
+
+    // Start quiz flow
+    document.getElementById('start-quiz-btn').addEventListener('click', () => {
+      if (!students.size) {
+        toast('No students in lobby yet — wait for students to join', 'error');
+        return;
+      }
+      document.getElementById('start-student-count').textContent = students.size;
+      document.getElementById('start-modal').classList.remove('hidden');
+    });
+    document.getElementById('start-modal-x').addEventListener('click', () => document.getElementById('start-modal').classList.add('hidden'));
+    document.getElementById('start-cancel-btn').addEventListener('click', () => document.getElementById('start-modal').classList.add('hidden'));
+    document.getElementById('start-confirm-btn').addEventListener('click', () => {
+      document.getElementById('start-modal').classList.add('hidden');
+      socket?.send({ type: 'quiz_start' });
+      markQuizStarted();
+      toast(`Quiz started! ${students.size} student${students.size !== 1 ? 's' : ''} have begun.`);
+    });
+
+    // Close quiz flow
+    document.getElementById('close-quiz-btn').addEventListener('click', () => {
+      document.getElementById('close-modal').classList.remove('hidden');
+    });
+    document.getElementById('close-modal-x').addEventListener('click', () => document.getElementById('close-modal').classList.add('hidden'));
+    document.getElementById('close-cancel-btn').addEventListener('click', () => document.getElementById('close-modal').classList.add('hidden'));
+    document.getElementById('close-confirm-btn').addEventListener('click', async () => {
+      document.getElementById('close-confirm-btn').disabled = true;
+      try {
+        await api(`/api/quizzes/${quizId}/close`, { method: 'POST' });
+        socket?.send({ type: 'quiz_close' });
+        toast('Quiz closed successfully');
+        setTimeout(() => location.href = '/static/pages/teacher/quizzes.html', 1500);
+      } catch(e) { toast(e.message, 'error'); document.getElementById('close-confirm-btn').disabled = false; }
+    });
+
+    // Init
+    const params = new URLSearchParams(location.search);
+    quizId = params.get('id');
+    if (!quizId) { location.href = '/static/pages/teacher/quizzes.html'; }
+
+    api(`/api/quizzes/${quizId}`).then(quiz => {
+      document.getElementById('quiz-title').textContent = quiz.title;
+      document.getElementById('quiz-subject').textContent = quiz.subject;
+      document.getElementById('quiz-code').textContent = quiz.code;
+      document.getElementById('quiz-timer').textContent = quiz.timer_minutes;
+
+      if (quiz.status !== 'active') {
+        document.getElementById('close-quiz-btn').disabled = true;
+        document.querySelector('.live-dot').style.background = 'var(--text-light)';
+        document.querySelector('.live-dot').style.animation = 'none';
+        toast(quiz.status === 'closed' ? 'This quiz is already closed' : 'Quiz is not active', 'error');
+      }
+    }).catch(() => toast('Failed to load quiz', 'error'));
+
+    // Connect WebSocket
+    socket = new QuizSocket(quizId, handleWsMessage);
+    socket.send({ type: 'teacher_join' });
+
+    // Keep-alive ping every 30s
+    setInterval(() => socket.send({ type: 'ping' }), 30000);
+  </script>
+</body>
+</html>

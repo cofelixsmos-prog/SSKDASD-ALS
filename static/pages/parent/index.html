@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Parent Dashboard</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .notif-bell{position:relative;cursor:pointer;background:none;border:none;font-size:1.4rem;padding:.2rem .4rem;border-radius:8px;transition:background .12s}
+    .notif-bell:hover{background:var(--surface2)}
+    .notif-badge{position:absolute;top:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:#fff;font-size:.6rem;font-weight:900;display:flex;align-items:center;justify-content:center}
+    .notif-drawer{position:fixed;top:0;right:0;height:100vh;width:360px;max-width:95vw;background:var(--bg);border-left:2.5px solid var(--border);z-index:280;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column}
+    .notif-drawer.open{transform:translateX(0)}
+    .notif-drawer-head{padding:1rem 1.25rem;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .notif-list{flex:1;overflow-y:auto;padding:1rem}
+    .notif-item{padding:.75rem .9rem;border:2px solid var(--border);border-radius:12px;margin-bottom:.5rem;font-size:.83rem;font-weight:700;line-height:1.45;cursor:default;transition:background .12s}
+    .notif-item.unread{border-color:var(--primary);background:var(--accent-light)}
+    .notif-time{font-size:.7rem;color:var(--text-light);margin-top:.25rem;font-weight:600}
+    .notif-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:279;display:none}
+    .notif-overlay.open{display:block}
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Parent</div>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/parent/attendance.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/parent/quizzes.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Dashboard</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <button class="notif-bell" id="notif-bell" title="Notifications">
+        🔔<span class="notif-badge hidden" id="notif-count">0</span>
+      </button>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">PR</div>
+          <span class="profile-name" id="topbar-name">Parent</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Parent</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- Child card -->
+    <div class="card" id="child-card" style="padding:1.1rem 1.5rem;margin-bottom:1rem"><div class="loading">Loading…</div></div>
+
+    <!-- Warning banner -->
+    <div id="warning-banner" style="display:none;background:#ff4b4b18;border:2px solid #ff4b4b44;border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1rem;font-size:.88rem;font-weight:700;color:var(--danger)">
+      ⚠️ Your child's attendance is below 75%. Please ensure regular attendance.
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" style="margin-bottom:1rem">
+      <div class="stat-card" onclick="location.href='/static/pages/parent/attendance.html'" style="cursor:pointer">
+        <div class="stat-label">Attendance</div>
+        <div class="stat-value" id="stat-att">—%</div>
+        <div class="stat-sub">Overall rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Classes Attended</div>
+        <div class="stat-value" id="stat-present">—</div>
+        <div class="stat-sub">Out of <span id="stat-total">—</span> total</div>
+      </div>
+      <div class="stat-card" onclick="location.href='/static/pages/parent/quizzes.html'" style="cursor:pointer">
+        <div class="stat-label">Latest Quiz</div>
+        <div class="stat-value" id="stat-quiz">—</div>
+        <div class="stat-sub" id="stat-quiz-sub">No quizzes yet</div>
+      </div>
+    </div>
+
+    <!-- Recent attendance -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recent Attendance</div>
+        <button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/parent/attendance.html'">Full Calendar</button>
+      </div>
+      <div id="recent-records"><div class="loading">Loading…</div></div>
+    </div>
+  </main>
+
+  <!-- Notification drawer overlay -->
+  <div class="notif-overlay" id="notif-overlay"></div>
+
+  <!-- Notification drawer -->
+  <div class="notif-drawer" id="notif-drawer">
+    <div class="notif-drawer-head">
+      <div style="font-size:1rem;font-weight:900">🔔 Notifications</div>
+      <button class="btn btn-icon btn-secondary" id="notif-close" style="width:30px;height:30px">✕</button>
+    </div>
+    <div class="notif-list" id="notif-list"><div class="loading">Loading…</div></div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['parent']);
+
+    const token = getToken();
+    const user = getUser();
+
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme')==='dark'?'light':'dark'; html.setAttribute('data-theme',n); localStorage.setItem('theme',n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger') && !e.target.closest('#notif-bell')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      return data;
+    }
+
+    // Notifications
+    async function openNotifications() {
+      document.getElementById('notif-drawer').classList.add('open');
+      document.getElementById('notif-overlay').classList.add('open');
+      try {
+        const notifs = await api('/api/parent/notifications');
+        const list = document.getElementById('notif-list');
+        if (!notifs.length) {
+          list.innerHTML = '<div class="empty-state" style="padding:2rem"><div class="empty-icon">🔔</div><div class="empty-text">No notifications</div></div>';
+        } else {
+          list.innerHTML = notifs.map(n => `
+            <div class="notif-item ${n.is_read ? '' : 'unread'}">
+              ${n.message}
+              <div class="notif-time">${new Date(n.created_at).toLocaleString()}</div>
+            </div>`).join('');
+        }
+        // Mark as read
+        await fetch('/api/parent/notifications/read', { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
+        document.getElementById('notif-count').classList.add('hidden');
+      } catch {}
+    }
+    function closeNotifications() {
+      document.getElementById('notif-drawer').classList.remove('open');
+      document.getElementById('notif-overlay').classList.remove('open');
+    }
+    document.getElementById('notif-bell').addEventListener('click', openNotifications);
+    document.getElementById('notif-close').addEventListener('click', closeNotifications);
+    document.getElementById('notif-overlay').addEventListener('click', closeNotifications);
+
+    async function load() {
+      try {
+        const summary = await api('/api/parent/summary');
+
+        // Child card
+        document.getElementById('child-card').innerHTML = `
+          <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+            <div class="student-avatar" style="width:52px;height:52px;font-size:1.1rem;flex-shrink:0">${summary.child_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+            <div style="flex:1">
+              <div style="font-size:1.05rem;font-weight:800">${summary.child_name}</div>
+              <div style="font-size:.8rem;color:var(--text-light);font-weight:600;margin-top:.15rem">${summary.batch || 'No batch'} ${summary.section ? '· Section '+summary.section : ''}</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/parent/attendance.html'">View Calendar</button>
+            <button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/parent/quizzes.html'">Quiz History</button>
+          </div>`;
+
+        // Stats
+        const pctEl = document.getElementById('stat-att');
+        pctEl.textContent = summary.attendance_pct + '%';
+        pctEl.style.color = summary.attendance_pct < 75 ? 'var(--danger)' : summary.attendance_pct >= 90 ? 'var(--success)' : 'var(--primary)';
+        document.getElementById('stat-present').textContent = summary.total_classes;
+        document.getElementById('stat-total').textContent = summary.total_classes;
+        if (summary.attendance_pct < 75 && summary.total_classes > 0) {
+          document.getElementById('warning-banner').style.display = 'block';
+        }
+
+        if (summary.latest_quiz_score) {
+          const q = summary.latest_quiz_score;
+          document.getElementById('stat-quiz').textContent = q.pct + '%';
+          document.getElementById('stat-quiz-sub').textContent = q.title;
+        }
+
+        // Notifications badge
+        if (summary.notifications_unread_count > 0) {
+          const badge = document.getElementById('notif-count');
+          badge.textContent = summary.notifications_unread_count;
+          badge.classList.remove('hidden');
+        }
+      } catch(e) {
+        document.getElementById('child-card').innerHTML = '<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">No linked student</div><div class="empty-sub">Ask admin to link your account to your child</div></div>';
+      }
+
+      // Recent attendance from parent/child endpoint
+      try {
+        const attData = await api('/api/attendance/parent/child');
+        const list = document.getElementById('recent-records');
+        if (!attData.records || !attData.records.length) {
+          list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No attendance recorded yet</div></div>';
+          return;
+        }
+        list.innerHTML = attData.records.slice(0, 7).map(r => `
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem 0;border-bottom:1.5px solid var(--border)">
+            <div style="flex:1;font-size:.88rem;font-weight:700">${new Date(r.date+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short'})}</div>
+            <span class="badge ${r.status==='present'?'badge-green':r.status==='absent'?'badge-red':'badge-yellow'}">${r.status}</span>
+          </div>`).join('');
+      } catch {}
+    }
+    load();
+  </script>
+</body>
+</html>

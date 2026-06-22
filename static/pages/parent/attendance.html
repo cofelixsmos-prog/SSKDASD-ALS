@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Child Attendance</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Parent</div>
+        <button class="nav-item" onclick="location.href='/static/pages/parent/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/parent/quizzes.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Child's Attendance</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">PR</div>
+          <span class="profile-name" id="topbar-name">Parent</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Parent</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" style="max-width:780px">
+
+    <!-- Child info card -->
+    <div class="card" id="child-card" style="margin-bottom:1rem">
+      <div class="loading">Loading…</div>
+    </div>
+
+    <!-- Low attendance warning -->
+    <div class="hidden" id="warning-banner" style="background:var(--danger-bg);border:2px solid rgba(255,75,75,.25);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem;font-size:.88rem;font-weight:700;color:var(--danger)">
+      ⚠️ Your child's attendance is below 75%. Please ensure regular attendance.
+    </div>
+
+    <!-- Summary stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:1rem">
+      <div class="stat-card" style="text-align:center"><div class="stat-label">Total</div><div class="stat-value" id="s-total" style="font-size:1.3rem">—</div></div>
+      <div class="stat-card" style="text-align:center"><div class="stat-label">Present</div><div class="stat-value" id="s-present" style="font-size:1.3rem;color:var(--success)">—</div></div>
+      <div class="stat-card" style="text-align:center"><div class="stat-label">Absent</div><div class="stat-value" id="s-absent" style="font-size:1.3rem;color:var(--danger)">—</div></div>
+      <div class="stat-card" style="text-align:center"><div class="stat-label">Late</div><div class="stat-value" id="s-late" style="font-size:1.3rem;color:var(--warning)">—</div></div>
+      <div class="stat-card" style="text-align:center"><div class="stat-label">Rate</div><div class="stat-value" id="s-pct" style="font-size:1.3rem">—%</div></div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="card">
+      <div id="calendar-container"><div class="loading">Loading calendar…</div></div>
+    </div>
+
+    <!-- Recent records -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Recent Records</div></div>
+      <div id="records-list"><div class="loading">Loading…</div></div>
+    </div>
+
+  </main>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    import { renderCalendar } from '/static/js/calendar.js';
+    requireAuth(['parent']);
+
+    const token = getToken();
+    const user = getUser();
+    let allRecords = [];
+    let curYear = new Date().getFullYear();
+    let curMonth = new Date().getMonth() + 1;
+
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', n); localStorage.setItem('theme', n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    function drawCalendar() {
+      renderCalendar('calendar-container', curYear, curMonth, allRecords);
+      document.getElementById('cal-prev')?.addEventListener('click', () => {
+        curMonth--; if (curMonth < 1) { curMonth = 12; curYear--; }
+        drawCalendar();
+      });
+      document.getElementById('cal-next')?.addEventListener('click', () => {
+        curMonth++; if (curMonth > 12) { curMonth = 1; curYear++; }
+        drawCalendar();
+      });
+    }
+
+    async function load() {
+      const res = await fetch('/api/attendance/parent/child', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) {
+        document.getElementById('child-card').innerHTML = '<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">No linked student found</div><div class="empty-sub">Ask admin to link your account to your child</div></div>';
+        document.getElementById('calendar-container').innerHTML = '';
+        document.getElementById('records-list').innerHTML = '';
+        return;
+      }
+      const data = await res.json();
+      allRecords = data.records;
+      const s = data.summary;
+      const child = data.child;
+
+      // Child info card
+      document.getElementById('child-card').innerHTML = `
+        <div style="display:flex;align-items:center;gap:1rem">
+          <div class="student-avatar" style="width:48px;height:48px;font-size:1rem;flex-shrink:0">${child.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+          <div>
+            <div style="font-size:1rem;font-weight:800">${child.name}</div>
+            <div style="font-size:.8rem;color:var(--text-light);font-weight:600;margin-top:.1rem">
+              ${child.batch_name || 'No batch assigned'} ${child.section ? '· Section ' + child.section : ''}
+            </div>
+          </div>
+        </div>`;
+
+      // Stats
+      document.getElementById('s-total').textContent = s.total;
+      document.getElementById('s-present').textContent = s.present;
+      document.getElementById('s-absent').textContent = s.absent;
+      document.getElementById('s-late').textContent = s.late;
+      const pctEl = document.getElementById('s-pct');
+      pctEl.textContent = s.percentage + '%';
+      pctEl.style.color = s.percentage < 75 ? 'var(--danger)' : s.percentage >= 90 ? 'var(--success)' : 'var(--primary)';
+
+      if (s.percentage < 75 && s.total > 0) {
+        document.getElementById('warning-banner').classList.remove('hidden');
+        document.getElementById('warning-banner').style.display = 'flex';
+      }
+
+      drawCalendar();
+
+      // Recent records
+      const list = document.getElementById('records-list');
+      if (!allRecords.length) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No attendance recorded yet</div></div>';
+        return;
+      }
+      list.innerHTML = allRecords.slice(0, 20).map(r => `
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.55rem 0;border-bottom:1.5px solid var(--border)">
+          <div style="flex:1;font-size:.88rem;font-weight:700">${new Date(r.date+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})}</div>
+          <span class="badge ${r.status==='present'?'badge-green':r.status==='absent'?'badge-red':'badge-yellow'}">${r.status}</span>
+        </div>`).join('');
+    }
+
+    load();
+  </script>
+</body>
+</html>

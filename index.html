@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BizzGrow Studio — Websites for Local Shops</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#080808;
+  --surface:#111111;
+  --card:#161616;
+  --border:#242424;
+  --white:#ffffff;
+  --muted:#666666;
+  --light:#aaaaaa;
+}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--black);
+  color:var(--white);
+  font-family:'Inter',sans-serif;
+  font-weight:400;
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* CUSTOM CURSOR */
+#cursor{position:fixed;width:10px;height:10px;background:var(--white);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform 0.1s;}
+#cursor-ring{position:fixed;width:36px;height:36px;border:1px solid rgba(255,255,255,0.35);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform 0.15s,width 0.2s,height 0.2s,border-color 0.2s;}
+body:hover #cursor-ring.hover{width:54px;height:54px;border-color:rgba(255,255,255,0.7);}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:24px 60px;
+  border-bottom:1px solid transparent;
+  transition:all 0.4s;
+}
+nav.scrolled{
+  background:rgba(8,8,8,0.94);
+  backdrop-filter:blur(20px);
+  border-bottom-color:var(--border);
+  padding:16px 60px;
+}
+.nav-logo{
+  font-family:'Playfair Display',serif;
+  font-size:22px;font-weight:700;
+  letter-spacing:-0.02em;
+}
+.nav-logo span{color:var(--muted);}
+.nav-links{display:flex;gap:40px;list-style:none;}
+.nav-links a{
+  color:var(--light);font-size:13px;letter-spacing:0.06em;text-transform:uppercase;
+  text-decoration:none;transition:color 0.2s;
+}
+.nav-links a:hover{color:var(--white);}
+.nav-cta{
+  background:var(--white);color:var(--black);
+  padding:10px 24px;font-size:13px;font-weight:600;letter-spacing:0.04em;
+  border:none;cursor:pointer;text-decoration:none;
+  transition:background 0.2s,transform 0.15s;
+}
+.nav-cta:hover{background:#e0e0e0;transform:translateY(-1px);}
+
+/* HERO */
+#hero{
+  position:relative;min-height:100vh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:0 60px;overflow:hidden;
+}
+.hero-eyebrow{
+  font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:28px;
+  opacity:0;transform:translateY(20px);
+  animation:fadeUp 0.8s 0.3s forwards;
+}
+.hero-headline{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(52px,6vw,88px);
+  font-weight:900;line-height:0.95;
+  letter-spacing:-0.03em;
+  max-width:760px;
+  opacity:0;transform:translateY(30px);
+  animation:fadeUp 0.9s 0.5s forwards;
+}
+.hero-headline em{font-style:italic;color:var(--light);}
+.hero-sub{
+  font-size:16px;color:var(--light);line-height:1.7;
+  max-width:420px;margin-top:28px;
+  opacity:0;transform:translateY(20px);
+  animation:fadeUp 0.8s 0.75s forwards;
+}
+.hero-actions{
+  display:flex;gap:16px;margin-top:44px;
+  opacity:0;transform:translateY(20px);
+  animation:fadeUp 0.8s 0.95s forwards;
+}
+.btn-primary{
+  background:var(--white);color:var(--black);
+  padding:15px 36px;font-size:14px;font-weight:600;
+  letter-spacing:0.04em;border:none;cursor:pointer;
+  text-decoration:none;display:inline-block;
+  transition:transform 0.15s,background 0.2s;
+}
+.btn-primary:hover{transform:translateY(-2px);background:#e8e8e8;}
+.btn-ghost{
+  background:transparent;color:var(--white);
+  padding:14px 36px;font-size:14px;font-weight:500;
+  letter-spacing:0.04em;border:1px solid var(--border);
+  cursor:pointer;text-decoration:none;display:inline-block;
+  transition:border-color 0.2s,transform 0.15s;
+}
+.btn-ghost:hover{border-color:var(--muted);transform:translateY(-2px);}
+.hero-scroll-hint{
+  position:absolute;bottom:40px;left:60px;
+  display:flex;align-items:center;gap:12px;
+  font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+  opacity:0;animation:fadeUp 0.8s 1.4s forwards;
+}
+.scroll-line{width:40px;height:1px;background:var(--border);}
+
+/* 3D LAPTOP CANVAS */
+#laptop-canvas{
+  position:absolute;right:-80px;top:50%;transform:translateY(-50%);
+  width:600px;height:500px;
+  opacity:0;animation:fadeIn 1.2s 1s forwards;
+}
+
+/* STATS STRIP */
+.stats-strip{
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:36px 60px;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:0;
+}
+.stat-item{
+  padding:0 40px;
+  border-right:1px solid var(--border);
+  opacity:0;transform:translateY(16px);
+  transition:opacity 0.5s,transform 0.5s;
+}
+.stat-item:first-child{padding-left:0;}
+.stat-item:last-child{border-right:none;}
+.stat-item.visible{opacity:1;transform:translateY(0);}
+.stat-num{
+  font-family:'Playfair Display',serif;
+  font-size:42px;font-weight:700;line-height:1;
+}
+.stat-label{
+  font-size:12px;color:var(--muted);letter-spacing:0.08em;
+  text-transform:uppercase;margin-top:6px;
+}
+
+/* SECTION SHARED */
+section{padding:120px 60px;}
+.section-eyebrow{
+  font-size:11px;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:20px;
+}
+.section-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(36px,4vw,56px);font-weight:700;
+  line-height:1.05;letter-spacing:-0.02em;
+  max-width:620px;
+}
+.section-title em{font-style:italic;color:var(--light);}
+
+/* SERVICES */
+#services{border-top:1px solid var(--border);}
+.services-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:0;margin-top:72px;
+  border:1px solid var(--border);
+}
+.service-card{
+  padding:52px 44px;
+  border-right:1px solid var(--border);
+  position:relative;overflow:hidden;
+  transition:background 0.3s;
+}
+.service-card:last-child{border-right:none;}
+.service-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--white);transform:scaleX(0);transform-origin:left;
+  transition:transform 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.service-card:hover::before{transform:scaleX(1);}
+.service-card:hover{background:var(--surface);}
+.service-num{
+  font-size:11px;letter-spacing:0.15em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:28px;
+}
+.service-icon{
+  font-size:28px;margin-bottom:20px;line-height:1;
+}
+.service-name{
+  font-family:'Playfair Display',serif;
+  font-size:24px;font-weight:600;margin-bottom:14px;letter-spacing:-0.01em;
+}
+.service-desc{
+  font-size:14px;color:var(--light);line-height:1.75;
+}
+
+/* PROCESS */
+#process{background:var(--surface);border-top:1px solid var(--border);}
+.process-layout{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:100px;margin-top:72px;align-items:start;
+}
+.process-list{display:flex;flex-direction:column;gap:0;}
+.process-step{
+  padding:32px 0;
+  border-bottom:1px solid var(--border);
+  display:grid;grid-template-columns:64px 1fr;gap:24px;
+  align-items:start;
+  opacity:0;transform:translateX(-20px);
+  transition:opacity 0.5s,transform 0.5s;
+}
+.process-step.visible{opacity:1;transform:translateX(0);}
+.process-step-num{
+  font-family:'Playfair Display',serif;
+  font-size:13px;color:var(--muted);padding-top:4px;
+  letter-spacing:0.06em;
+}
+.process-step-title{
+  font-size:17px;font-weight:500;margin-bottom:8px;
+}
+.process-step-desc{
+  font-size:14px;color:var(--light);line-height:1.7;
+}
+.process-aside{
+  position:sticky;top:120px;
+}
+.process-aside-box{
+  border:1px solid var(--border);padding:48px;
+}
+.process-aside-title{
+  font-family:'Playfair Display',serif;
+  font-size:32px;font-weight:700;line-height:1.1;letter-spacing:-0.02em;
+  margin-bottom:20px;
+}
+.process-aside-body{
+  font-size:14px;color:var(--light);line-height:1.8;margin-bottom:32px;
+}
+.timeline-bar{
+  width:100%;height:3px;background:var(--border);position:relative;
+  margin-bottom:10px;overflow:hidden;
+}
+.timeline-fill{
+  height:100%;background:var(--white);
+  animation:none;
+}
+.timeline-label{
+  display:flex;justify-content:space-between;
+  font-size:11px;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;
+}
+
+/* PORTFOLIO */
+#portfolio{border-top:1px solid var(--border);}
+.portfolio-intro{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  margin-bottom:60px;
+}
+.portfolio-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:2px;
+}
+.portfolio-item{
+  position:relative;overflow:hidden;
+  background:var(--card);
+  aspect-ratio:4/3;
+  cursor:pointer;
+}
+.portfolio-item:nth-child(1){grid-column:span 2;aspect-ratio:16/6;}
+.portfolio-mock{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;
+  transition:transform 0.6s cubic-bezier(0.4,0,0.2,1);
+}
+.portfolio-item:hover .portfolio-mock{transform:scale(1.03);}
+.portfolio-mock-screen{
+  width:65%;height:55%;
+  border:1px solid var(--border);
+  background:var(--surface);
+  position:relative;overflow:hidden;
+}
+.mock-header{
+  height:28px;background:var(--card);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 14px;gap:6px;
+}
+.mock-dot{width:6px;height:6px;border-radius:50%;background:var(--border);}
+.mock-nav{width:60%;height:6px;background:var(--border);border-radius:1px;margin-left:auto;}
+.mock-hero-block{
+  margin:14px;height:35%;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+}
+.mock-hero-text{
+  font-size:8px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);
+}
+.mock-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:6px;margin:0 14px;
+}
+.mock-block{height:20px;background:var(--border);}
+.portfolio-overlay{
+  position:absolute;inset:0;
+  background:rgba(8,8,8,0.85);
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:32px;
+  opacity:0;transition:opacity 0.3s;
+}
+.portfolio-item:hover .portfolio-overlay{opacity:1;}
+.portfolio-tag{
+  font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;
+}
+.portfolio-name{
+  font-family:'Playfair Display',serif;font-size:22px;font-weight:600;
+}
+.portfolio-arrow{
+  margin-top:16px;width:32px;height:32px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;
+}
+
+/* TESTIMONIALS */
+#testimonials{background:var(--surface);border-top:1px solid var(--border);}
+.testimonials-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;
+  margin-top:72px;
+}
+.testimonial-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  padding:40px;
+  transition:border-color 0.3s;
+}
+.testimonial-card:hover{border-color:#444;}
+.testimonial-quote{
+  font-family:'Playfair Display',serif;
+  font-size:17px;font-style:italic;line-height:1.7;
+  color:var(--light);margin-bottom:28px;
+}
+.testimonial-author{
+  display:flex;align-items:center;gap:14px;
+  padding-top:20px;border-top:1px solid var(--border);
+}
+.author-avatar{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:600;flex-shrink:0;
+}
+.author-name{font-size:14px;font-weight:500;}
+.author-biz{font-size:12px;color:var(--muted);}
+
+/* PRICING */
+#pricing{border-top:1px solid var(--border);}
+.pricing-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;
+  border:1px solid var(--border);margin-top:72px;
+}
+.pricing-card{
+  padding:52px 44px;
+  border-right:1px solid var(--border);
+  position:relative;
+}
+.pricing-card:last-child{border-right:none;}
+.pricing-card.featured{background:var(--white);color:var(--black);}
+.pricing-card.featured .pricing-name,
+.pricing-card.featured .pricing-price,
+.pricing-card.featured .pricing-period,
+.pricing-card.featured .pricing-feature{color:var(--black);}
+.pricing-card.featured .pricing-muted{color:#666;}
+.pricing-card.featured .pricing-divider{border-color:rgba(0,0,0,0.12);}
+.pricing-card.featured .check{color:var(--black);}
+.pricing-badge{
+  display:inline-block;
+  background:var(--black);color:var(--white);
+  font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+  padding:4px 12px;margin-bottom:20px;
+}
+.pricing-name{
+  font-size:12px;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:20px;
+}
+.pricing-price{
+  font-family:'Playfair Display',serif;
+  font-size:52px;font-weight:700;letter-spacing:-0.03em;line-height:1;
+}
+.pricing-period{font-size:13px;color:var(--muted);margin-top:6px;margin-bottom:32px;}
+.pricing-divider{border:none;border-top:1px solid var(--border);margin-bottom:32px;}
+.pricing-features{list-style:none;display:flex;flex-direction:column;gap:12px;}
+.pricing-feature{font-size:14px;color:var(--light);display:flex;gap:10px;align-items:flex-start;}
+.check{font-size:14px;flex-shrink:0;color:var(--white);}
+.pricing-muted{color:var(--muted);}
+.pricing-cta{
+  display:block;text-align:center;
+  margin-top:40px;padding:14px 24px;
+  font-size:13px;font-weight:600;letter-spacing:0.04em;
+  border:1px solid currentColor;
+  text-decoration:none;transition:transform 0.15s;
+}
+.pricing-cta:hover{transform:translateY(-2px);}
+.pricing-card.featured .pricing-cta{background:var(--black);color:var(--white);border-color:var(--black);}
+
+/* CONTACT CTA */
+#contact-cta{
+  border-top:1px solid var(--border);
+  text-align:center;padding:140px 60px;
+  position:relative;overflow:hidden;
+}
+#contact-cta::before{
+  content:'';position:absolute;top:50%;left:50%;
+  width:600px;height:600px;
+  border:1px solid var(--border);border-radius:50%;
+  transform:translate(-50%,-50%);
+  animation:pulse 4s ease-in-out infinite;
+}
+#contact-cta::after{
+  content:'';position:absolute;top:50%;left:50%;
+  width:900px;height:900px;
+  border:1px solid var(--border);border-radius:50%;
+  transform:translate(-50%,-50%);
+  animation:pulse 4s ease-in-out 2s infinite;
+}
+.cta-eyebrow{
+  font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:24px;position:relative;z-index:1;
+}
+.cta-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(44px,5vw,72px);font-weight:700;
+  line-height:1.0;letter-spacing:-0.03em;
+  max-width:660px;margin:0 auto 36px;
+  position:relative;z-index:1;
+}
+.cta-title em{font-style:italic;color:var(--light);}
+.cta-actions{
+  display:flex;justify-content:center;gap:16px;
+  position:relative;z-index:1;
+}
+
+/* FOOTER */
+footer{
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  padding:80px 60px 40px;
+}
+.footer-grid{
+  display:grid;
+  grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:60px;
+  padding-bottom:60px;
+  border-bottom:1px solid var(--border);
+}
+.footer-brand-name{
+  font-family:'Playfair Display',serif;
+  font-size:24px;font-weight:700;letter-spacing:-0.02em;margin-bottom:14px;
+}
+.footer-brand-name span{color:var(--muted);}
+.footer-brand-desc{font-size:14px;color:var(--muted);line-height:1.8;max-width:280px;margin-bottom:28px;}
+.footer-social{display:flex;gap:10px;}
+.footer-social-btn{
+  width:36px;height:36px;border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;color:var(--muted);text-decoration:none;
+  transition:border-color 0.2s,color 0.2s;
+}
+.footer-social-btn:hover{border-color:var(--muted);color:var(--white);}
+.footer-col-title{
+  font-size:11px;letter-spacing:0.14em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:20px;
+}
+.footer-links{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.footer-links a{
+  font-size:14px;color:var(--light);text-decoration:none;
+  transition:color 0.2s;
+}
+.footer-links a:hover{color:var(--white);}
+.footer-contact-item{margin-bottom:16px;}
+.footer-contact-label{font-size:11px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;}
+.footer-contact-val{font-size:14px;color:var(--light);}
+.footer-contact-val a{color:var(--light);text-decoration:none;transition:color 0.2s;}
+.footer-contact-val a:hover{color:var(--white);}
+.footer-bottom{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:32px;
+}
+.footer-copy{font-size:13px;color:var(--muted);}
+.footer-legal{display:flex;gap:28px;}
+.footer-legal a{font-size:13px;color:var(--muted);text-decoration:none;transition:color 0.2s;}
+.footer-legal a:hover{color:var(--light);}
+.footer-newsletter{margin-top:24px;}
+.newsletter-form{display:flex;gap:0;margin-top:10px;}
+.newsletter-input{
+  flex:1;background:var(--card);border:1px solid var(--border);
+  border-right:none;padding:11px 16px;font-size:13px;
+  color:var(--white);font-family:'Inter',sans-serif;outline:none;
+}
+.newsletter-input::placeholder{color:var(--muted);}
+.newsletter-btn{
+  background:var(--white);color:var(--black);
+  border:none;padding:11px 20px;font-size:13px;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:background 0.2s;
+  font-family:'Inter',sans-serif;letter-spacing:0.03em;
+}
+.newsletter-btn:hover{background:#e8e8e8;}
+
+/* MARQUEE */
+.marquee-strip{
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  overflow:hidden;padding:18px 0;
+  background:var(--black);
+}
+.marquee-inner{
+  display:flex;gap:64px;
+  animation:marquee 22s linear infinite;
+  white-space:nowrap;
+}
+.marquee-item{
+  font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);
+  display:flex;align-items:center;gap:20px;flex-shrink:0;
+}
+.marquee-dot{width:4px;height:4px;background:var(--border);border-radius:50%;flex-shrink:0;}
+
+/* ANIMATIONS */
+@keyframes fadeUp{to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{to{opacity:1;}}
+@keyframes pulse{0%,100%{opacity:0.15;}50%{opacity:0.4;}}
+@keyframes marquee{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity 0.7s,transform 0.7s;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+/* HOVER LINK UNDERLINE */
+.underline-link{
+  position:relative;text-decoration:none;
+}
+.underline-link::after{
+  content:'';position:absolute;bottom:-2px;left:0;right:0;height:1px;
+  background:currentColor;transform:scaleX(0);transform-origin:left;
+  transition:transform 0.3s;
+}
+.underline-link:hover::after{transform:scaleX(1);}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">Bizz<span>Grow</span> Studio</div>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#process">Process</a></li>
+    <li><a href="#portfolio">Work</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+  </ul>
+  <a href="#contact-cta" class="nav-cta">Start a Project</a>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-eyebrow">Web Design Studio for Local Businesses</div>
+  <h1 class="hero-headline">Your shop,<br><em>online.</em><br>Done right.</h1>
+  <p class="hero-sub">We build fast, beautiful websites that help local shops attract new customers and grow their presence online — without the agency price tag.</p>
+  <div class="hero-actions">
+    <a href="#portfolio" class="btn-primary">View Our Work</a>
+    <a href="#contact-cta" class="btn-ghost">Get a Free Quote</a>
+  </div>
+  <div class="hero-scroll-hint">
+    <span class="scroll-line"></span>
+    <span>Scroll to explore</span>
+  </div>
+  <canvas id="laptop-canvas"></canvas>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip">
+  <div class="marquee-inner">
+    <span class="marquee-item"><span>Custom Web Design</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>E-Commerce Stores</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>SEO Optimised</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>Mobile-First</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>Local Businesses</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>7-Day Turnaround</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>Lifetime Support</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>Custom Web Design</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>E-Commerce Stores</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>SEO Optimised</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>Mobile-First</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>Local Businesses</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>7-Day Turnaround</span><span class="marquee-dot"></span></span>
+    <span class="marquee-item"><span>Lifetime Support</span><span class="marquee-dot"></span></span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stat-item">
+    <div class="stat-num">120+</div>
+    <div class="stat-label">Shops Launched</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">98%</div>
+    <div class="stat-label">Client Satisfaction</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">7 Days</div>
+    <div class="stat-label">Average Turnaround</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">3×</div>
+    <div class="stat-label">Avg. Traffic Increase</div>
+  </div>
+</div>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-eyebrow">What We Do</div>
+  <h2 class="section-title">Everything your shop <em>needs to win</em> online</h2>
+  <div class="services-grid">
+    <div class="service-card reveal">
+      <div class="service-num">01</div>
+      <div class="service-icon">◻</div>
+      <div class="service-name">Web Design</div>
+      <p class="service-desc">Pixel-perfect, hand-crafted websites tailored to your brand. No templates — every site is built from scratch around your story.</p>
+    </div>
+    <div class="service-card reveal" style="transition-delay:0.1s">
+      <div class="service-num">02</div>
+      <div class="service-icon">◈</div>
+      <div class="service-name">E-Commerce</div>
+      <p class="service-desc">Fully functional online stores with inventory management, secure checkout, and mobile-optimised product pages that convert.</p>
+    </div>
+    <div class="service-card reveal" style="transition-delay:0.2s">
+      <div class="service-num">03</div>
+      <div class="service-icon">◉</div>
+      <div class="service-name">Local SEO</div>
+      <p class="service-desc">Show up when locals search for what you sell. We optimise your site and Google presence so customers find you first.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section id="process">
+  <div class="section-eyebrow">How It Works</div>
+  <h2 class="section-title reveal">From idea to live <em>in days,</em> not months</h2>
+  <div class="process-layout">
+    <div class="process-list">
+      <div class="process-step">
+        <div class="process-step-num">01 /</div>
+        <div>
+          <div class="process-step-title">Discovery Call</div>
+          <p class="process-step-desc">We spend 30 minutes understanding your shop, your customers, and what you want your website to achieve.</p>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="process-step-num">02 /</div>
+        <div>
+          <div class="process-step-title">Design Concept</div>
+          <p class="process-step-desc">Within 48 hours, we present a full homepage design concept based on your brand, goals, and competitors.</p>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="process-step-num">03 /</div>
+        <div>
+          <div class="process-step-title">Build & Refine</div>
+          <p class="process-step-desc">We build the full site and invite you to give feedback. Two rounds of revisions included in every package.</p>
+        </div>
+      </div>
+      <div class="process-step">
+        <div class="process-step-num">04 /</div>
+        <div>
+          <div class="process-step-title">Launch</div>
+          <p class="process-step-desc">We handle domain setup, hosting, speed optimisation, and launch. Your site goes live — ready to bring customers in.</p>
+        </div>
+      </div>
+    </div>
+    <div class="process-aside reveal">
+      <div class="process-aside-box">
+        <div class="process-aside-title">Typical project timeline</div>
+        <p class="process-aside-body">Most local shop websites go from brief to live in under 7 working days. Complex e-commerce projects take 2–3 weeks.</p>
+        <div style="margin-bottom:24px;">
+          <div class="timeline-label" style="margin-bottom:6px;"><span>Discovery</span><span>Day 1</span></div>
+          <div class="timeline-bar"><div class="timeline-fill" style="width:14%;"></div></div>
+        </div>
+        <div style="margin-bottom:24px;">
+          <div class="timeline-label" style="margin-bottom:6px;"><span>Design</span><span>Day 2–3</span></div>
+          <div class="timeline-bar"><div class="timeline-fill" style="width:42%;"></div></div>
+        </div>
+        <div style="margin-bottom:24px;">
+          <div class="timeline-label" style="margin-bottom:6px;"><span>Build</span><span>Day 4–6</span></div>
+          <div class="timeline-bar"><div class="timeline-fill" style="width:84%;"></div></div>
+        </div>
+        <div>
+          <div class="timeline-label" style="margin-bottom:6px;"><span>Launch</span><span>Day 7</span></div>
+          <div class="timeline-bar"><div class="timeline-fill" style="width:100%;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PORTFOLIO -->
+<section id="portfolio">
+  <div class="portfolio-intro">
+    <div>
+      <div class="section-eyebrow">Our Work</div>
+      <h2 class="section-title reveal">Shops we've <em>transformed</em></h2>
+    </div>
+    <a href="#contact-cta" class="btn-ghost" style="flex-shrink:0">See All Projects →</a>
+  </div>
+  <div class="portfolio-grid">
+    <div class="portfolio-item">
+      <div class="portfolio-mock" style="background:#0e0e0e;">
+        <div class="portfolio-mock-screen" style="width:80%;height:65%;">
+          <div class="mock-header"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-nav"></div></div>
+          <div style="padding:12px;">
+            <div style="height:12px;background:#1a1a1a;border-radius:1px;width:40%;margin-bottom:8px;"></div>
+            <div style="height:6px;background:#1a1a1a;border-radius:1px;width:70%;margin-bottom:4px;"></div>
+            <div style="height:6px;background:#1a1a1a;border-radius:1px;width:55%;"></div>
+            <div class="mock-grid" style="margin-top:12px;">
+              <div class="mock-block" style="height:40px;background:#1a1a1a;"></div>
+              <div class="mock-block" style="height:40px;background:#1a1a1a;"></div>
+              <div class="mock-block" style="height:40px;background:#1a1a1a;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-tag">Café & Bakery</div>
+        <div class="portfolio-name">The Morning Press</div>
+        <div class="portfolio-arrow">→</div>
+      </div>
+    </div>
+    <div class="portfolio-item">
+      <div class="portfolio-mock" style="background:#0c0c0c;">
+        <div class="portfolio-mock-screen" style="width:55%;height:70%;">
+          <div class="mock-header"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-nav"></div></div>
+          <div style="padding:10px;">
+            <div style="height:50px;background:#181818;border-radius:1px;margin-bottom:6px;display:flex;align-items:center;justify-content:center;"><div style="font-size:7px;color:#333;letter-spacing:0.2em;text-transform:uppercase;">Fashion</div></div>
+            <div class="mock-grid" style="margin:0;gap:4px;">
+              <div class="mock-block" style="height:36px;background:#181818;"></div>
+              <div class="mock-block" style="height:36px;background:#181818;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-tag">Boutique Fashion</div>
+        <div class="portfolio-name">Noir & Thread</div>
+        <div class="portfolio-arrow">→</div>
+      </div>
+    </div>
+    <div class="portfolio-item">
+      <div class="portfolio-mock" style="background:#0d0d0d;">
+        <div class="portfolio-mock-screen">
+          <div class="mock-header"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-nav"></div></div>
+          <div class="mock-hero-block"><div class="mock-hero-text">Menu</div></div>
+          <div class="mock-grid">
+            <div class="mock-block"></div><div class="mock-block"></div><div class="mock-block"></div>
+          </div>
+        </div>
+      </div>
+      <div class="portfolio-overlay">
+        <div class="portfolio-tag">Restaurant</div>
+        <div class="portfolio-name">Spice Route Kitchen</div>
+        <div class="portfolio-arrow">→</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials">
+  <div class="section-eyebrow reveal">What Our Clients Say</div>
+  <h2 class="section-title reveal">Real results from <em>real shops</em></h2>
+  <div class="testimonials-grid">
+    <div class="testimonial-card reveal">
+      <p class="testimonial-quote">"BizzGrow turned our dusty old website into something we're genuinely proud to show customers. Online orders tripled in the first month."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar">SA</div>
+        <div>
+          <div class="author-name">Sunita Arora</div>
+          <div class="author-biz">Owner, Arora Grocers</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card reveal" style="transition-delay:0.1s">
+      <p class="testimonial-quote">"They delivered our full e-commerce site in 6 days. The process was seamless and the result looks like it cost five times what we paid."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar">RK</div>
+        <div>
+          <div class="author-name">Rahul Kapoor</div>
+          <div class="author-biz">Founder, Kapoor Electronics</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card reveal" style="transition-delay:0.2s">
+      <p class="testimonial-quote">"We went from invisible online to ranking first on Google Maps for our area. The SEO work they did alongside the site was a game changer."</p>
+      <div class="testimonial-author">
+        <div class="author-avatar">PM</div>
+        <div>
+          <div class="author-name">Priya Mehta</div>
+          <div class="author-biz">Owner, Mehta Sweets</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="section-eyebrow">Pricing</div>
+  <h2 class="section-title reveal">Transparent pricing, <em>no surprises</em></h2>
+  <div class="pricing-grid">
+    <div class="pricing-card reveal">
+      <div class="pricing-name">Starter</div>
+      <div class="pricing-price">₹14,999</div>
+      <div class="pricing-period">One-time project fee</div>
+      <hr class="pricing-divider">
+      <ul class="pricing-features">
+        <li class="pricing-feature"><span class="check">✓</span>5-page website</li>
+        <li class="pricing-feature"><span class="check">✓</span>Mobile-first design</li>
+        <li class="pricing-feature"><span class="check">✓</span>Contact form</li>
+        <li class="pricing-feature"><span class="check">✓</span>Google Maps embed</li>
+        <li class="pricing-feature"><span class="check">✓</span>Basic SEO setup</li>
+        <li class="pricing-feature"><span class="check pricing-muted">✓</span><span class="pricing-muted">1 month support</span></li>
+      </ul>
+      <a href="#contact-cta" class="pricing-cta">Get Started</a>
+    </div>
+    <div class="pricing-card featured">
+      <div class="pricing-badge">Most Popular</div>
+      <div class="pricing-name">Growth</div>
+      <div class="pricing-price">₹29,999</div>
+      <div class="pricing-period">One-time project fee</div>
+      <hr class="pricing-divider">
+      <ul class="pricing-features">
+        <li class="pricing-feature"><span class="check">✓</span>Up to 15 pages</li>
+        <li class="pricing-feature"><span class="check">✓</span>Custom design system</li>
+        <li class="pricing-feature"><span class="check">✓</span>Blog setup</li>
+        <li class="pricing-feature"><span class="check">✓</span>Google Business integration</li>
+        <li class="pricing-feature"><span class="check">✓</span>Full local SEO</li>
+        <li class="pricing-feature"><span class="check">✓</span>3 months support</li>
+        <li class="pricing-feature"><span class="check">✓</span>Analytics dashboard</li>
+      </ul>
+      <a href="#contact-cta" class="pricing-cta">Get Started</a>
+    </div>
+    <div class="pricing-card reveal" style="transition-delay:0.2s">
+      <div class="pricing-name">Commerce</div>
+      <div class="pricing-price">₹54,999</div>
+      <div class="pricing-period">One-time project fee</div>
+      <hr class="pricing-divider">
+      <ul class="pricing-features">
+        <li class="pricing-feature"><span class="check">✓</span>Full online store</li>
+        <li class="pricing-feature"><span class="check">✓</span>Inventory management</li>
+        <li class="pricing-feature"><span class="check">✓</span>Payment gateway</li>
+        <li class="pricing-feature"><span class="check">✓</span>Order tracking</li>
+        <li class="pricing-feature"><span class="check">✓</span>Product photography tips</li>
+        <li class="pricing-feature"><span class="check">✓</span>6 months support</li>
+        <li class="pricing-feature"><span class="check">✓</span>Staff training session</li>
+      </ul>
+      <a href="#contact-cta" class="pricing-cta">Get Started</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="contact-cta">
+  <div class="cta-eyebrow">Ready to Grow?</div>
+  <h2 class="cta-title">Let's build something <em>your customers will love</em></h2>
+  <div class="cta-actions">
+    <a href="mailto:hello@bizzgrowstudio.com" class="btn-primary">Email Us Today</a>
+    <a href="tel:+919999000000" class="btn-ghost">Call Now</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand-name">Bizz<span>Grow</span> Studio</div>
+      <p class="footer-brand-desc">We help local shops build a professional online presence — fast, affordable, and done right. Based in Gurugram, serving businesses all across India.</p>
+      <div class="footer-social">
+        <a href="#" class="footer-social-btn">in</a>
+        <a href="#" class="footer-social-btn">tw</a>
+        <a href="#" class="footer-social-btn">ig</a>
+        <a href="#" class="footer-social-btn">fb</a>
+      </div>
+      <div class="footer-newsletter">
+        <div class="footer-col-title">Weekly tips for local businesses</div>
+        <div class="newsletter-form">
+          <input type="email" class="newsletter-input" placeholder="your@email.com">
+          <button class="newsletter-btn">Subscribe</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Services</div>
+      <ul class="footer-links">
+        <li><a href="#">Web Design</a></li>
+        <li><a href="#">E-Commerce</a></li>
+        <li><a href="#">Local SEO</a></li>
+        <li><a href="#">Logo & Branding</a></li>
+        <li><a href="#">Website Redesign</a></li>
+        <li><a href="#">Monthly Maintenance</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Company</div>
+      <ul class="footer-links">
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Our Work</a></li>
+        <li><a href="#">Process</a></li>
+        <li><a href="#">Pricing</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Careers</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Contact</div>
+      <div class="footer-contact-item">
+        <div class="footer-contact-label">Email</div>
+        <div class="footer-contact-val"><a href="mailto:hello@bizzgrowstudio.com">hello@bizzgrowstudio.com</a></div>
+      </div>
+      <div class="footer-contact-item">
+        <div class="footer-contact-label">Phone</div>
+        <div class="footer-contact-val"><a href="tel:+919999000000">+91 99990 00000</a></div>
+      </div>
+      <div class="footer-contact-item">
+        <div class="footer-contact-label">Studio</div>
+        <div class="footer-contact-val">Sector 44, Gurugram,<br>Haryana 122003</div>
+      </div>
+      <div class="footer-contact-item">
+        <div class="footer-contact-label">Hours</div>
+        <div class="footer-contact-val">Mon–Sat, 9am–7pm IST</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="footer-copy">© 2026 BizzGrow Studio. All rights reserved.</div>
+    <div class="footer-legal">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+      <a href="#">Cookie Policy</a>
+      <a href="#">Sitemap</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ---- CUSTOM CURSOR ----
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let cx=0,cy=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{cx=e.clientX;cy=e.clientY;cursor.style.left=cx+'px';cursor.style.top=cy+'px';});
+(function animRing(){rx+=(cx-rx)*0.12;ry+=(cy-ry)*0.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing);})();
+document.querySelectorAll('a,button,.service-card,.portfolio-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('hover'));
+});
+
+// ---- NAV SCROLL ----
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>{
+  nav.classList.toggle('scrolled',window.scrollY>60);
+});
+
+// ---- STATS OBSERVER ----
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');}});
+},{threshold:0.2});
+document.querySelectorAll('.stat-item,.reveal,.process-step').forEach(el=>io.observe(el));
+
+// ---- THREE.JS LAPTOP ----
+const canvas=document.getElementById('laptop-canvas');
+const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(600,500);
+renderer.setClearColor(0x000000,0);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,600/500,0.1,100);
+camera.position.set(0,1.2,5.5);
+
+// Laptop group
+const laptop=new THREE.Group();
+scene.add(laptop);
+
+// Materials
+const bodyMat=new THREE.MeshStandardMaterial({color:0x1a1a1a,metalness:0.92,roughness:0.12});
+const screenMat=new THREE.MeshStandardMaterial({color:0x050505,metalness:0.3,roughness:0.6});
+const screenGlowMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:0.08,roughness:0.8});
+const edgeMat=new THREE.MeshStandardMaterial({color:0x2a2a2a,metalness:0.98,roughness:0.05});
+
+// Base (bottom)
+const baseGeo=new THREE.BoxGeometry(3.2,0.08,2.1);
+const base=new THREE.Mesh(baseGeo,bodyMat);
+base.position.y=0;
+base.castShadow=true;
+laptop.add(base);
+
+// Keyboard area
+const kbGeo=new THREE.BoxGeometry(2.6,0.01,1.6);
+const kb=new THREE.Mesh(kbGeo,screenMat);
+kb.position.set(0,0.045,0.05);
+laptop.add(kb);
+
+// Keys (simplified rows)
+for(let r=0;r<4;r++){
+  for(let c=0;c<12;c++){
+    const keyG=new THREE.BoxGeometry(0.155,0.012,0.13);
+    const key=new THREE.Mesh(keyG,edgeMat);
+    key.position.set(-1.02+c*0.185,0.055,-0.55+r*0.205);
+    laptop.add(key);
+  }
+}
+
+// Touchpad
+const tpGeo=new THREE.BoxGeometry(0.8,0.005,0.52);
+const tp=new THREE.Mesh(tpGeo,screenMat);
+tp.position.set(0,0.044,0.55);
+laptop.add(tp);
+
+// Hinge group (lid rotates here)
+const hingeGroup=new THREE.Group();
+hingeGroup.position.set(0,0.04,-1.0);
+laptop.add(hingeGroup);
+
+// Lid
+const lidGeo=new THREE.BoxGeometry(3.2,0.06,2.1);
+const lid=new THREE.Mesh(lidGeo,bodyMat);
+lid.position.set(0,0,1.05);
+hingeGroup.add(lid);
+
+// Screen bezel
+const bezelGeo=new THREE.BoxGeometry(2.9,0.02,1.82);
+const bezel=new THREE.Mesh(bezelGeo,screenMat);
+bezel.position.set(0,0.04,1.05);
+hingeGroup.add(bezel);
+
+// Screen glow
+const screenPanel=new THREE.Mesh(
+  new THREE.PlaneGeometry(2.6,1.55),
+  screenGlowMat
+);
+screenPanel.rotation.x=Math.PI/2;
+screenPanel.position.set(0,0.052,1.05);
+hingeGroup.add(screenPanel);
+
+// Hinge bars
+[-1.3,1.3].forEach(x=>{
+  const h=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.28,16),edgeMat);
+  h.rotation.z=Math.PI/2;h.position.set(x,0.02,0);
+  hingeGroup.add(h);
+});
+
+// Apple-style logo on lid back
+const logoGeo=new THREE.CircleGeometry(0.18,32);
+const logoMat=new THREE.MeshStandardMaterial({color:0x2a2a2a,metalness:0.98,roughness:0.02});
+const logo=new THREE.Mesh(logoGeo,logoMat);
+logo.rotation.x=Math.PI/2;
+logo.position.set(0,-0.04,1.05);
+hingeGroup.add(logo);
+
+// Lighting
+const ambient=new THREE.AmbientLight(0xffffff,0.4);
+scene.add(ambient);
+const key1=new THREE.DirectionalLight(0xffffff,1.2);
+key1.position.set(3,5,4);
+scene.add(key1);
+const fill=new THREE.DirectionalLight(0xffffff,0.3);
+fill.position.set(-4,2,-2);
+scene.add(fill);
+const rim=new THREE.DirectionalLight(0xffffff,0.5);
+rim.position.set(0,3,-5);
+scene.add(rim);
+
+// Point light for screen glow
+const screenLight=new THREE.PointLight(0xffffff,0.6,4);
+screenLight.position.set(0,0.5,0.2);
+hingeGroup.add(screenLight);
+
+laptop.position.set(0.3,-0.5,0);
+laptop.rotation.y=-0.22;
+
+// Scroll-driven rotation & lid open
+let targetRotY=-0.22,targetLidX=Math.PI/2,currentLidX=Math.PI/2,curRotY=-0.22;
+function onScroll(){
+  const hero=document.getElementById('hero');
+  const heroH=hero.offsetHeight;
+  const t=Math.min(Math.max(window.scrollY/heroH,0),1);
+  targetRotY=-0.22+t*Math.PI*1.6;
+  // lid: starts closed (PI/2=flat), opens to ~-1.1rad as you scroll
+  targetLidX=Math.PI/2-t*Math.PI*0.75;
+}
+window.addEventListener('scroll',onScroll,{passive:true});
+
+// Animate
+let time=0;
+function animate(){
+  requestAnimationFrame(animate);
+  time+=0.012;
+  // Smooth lerp
+  curRotY+=(targetRotY-curRotY)*0.06;
+  currentLidX+=(targetLidX-currentLidX)*0.06;
+  laptop.rotation.y=curRotY;
+  hingeGroup.rotation.x=currentLidX;
+  // Subtle float
+  laptop.position.y=-0.5+Math.sin(time)*0.04;
+  // Screen brightness pulses
+  screenGlowMat.emissiveIntensity=0.06+Math.sin(time*0.7)*0.02;
+  renderer.render(scene,camera);
+}
+animate();
+
+// ---- REVEAL ON SCROLL ----
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+    }
+  });
+},{threshold:0.15,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal,.process-step').forEach(el=>observer.observe(el));
+
+// Stagger stat items
+const statObs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const items=document.querySelectorAll('.stat-item');
+      items.forEach((item,i)=>{
+        setTimeout(()=>item.classList.add('visible'),i*120);
+      });
+    }
+  });
+},{threshold:0.3});
+const strip=document.querySelector('.stats-strip');
+if(strip)statObs.observe(strip);
+</script>
+</body>
+</html>

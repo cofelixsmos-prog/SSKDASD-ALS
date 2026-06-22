@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Attendance</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .step-indicator{display:flex;gap:.5rem;align-items:center;margin-bottom:1.5rem}
+    .step{display:flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:800;color:var(--text-light)}
+    .step.active{color:var(--primary)}
+    .step.done{color:var(--success)}
+    .step-dot{width:28px;height:28px;border-radius:50%;border:2.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;flex-shrink:0}
+    .step.active .step-dot{background:var(--primary);border-color:var(--primary);color:#fff}
+    .step.done .step-dot{background:var(--success);border-color:var(--success);color:#fff}
+    .step-line{flex:1;height:2px;background:var(--border);border-radius:2px}
+    .step-line.done{background:var(--success)}
+
+    .roster-table{width:100%;border-collapse:collapse}
+    .roster-table th{text-align:left;padding:.5rem .75rem;font-size:.7rem;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;border-bottom:2.5px solid var(--border)}
+    .roster-table td{padding:.55rem .75rem;border-bottom:1.5px solid var(--border)}
+    .roster-table tr:last-child td{border-bottom:none}
+    .status-btn{padding:.35rem .75rem;border:2.5px solid var(--border);border-radius:10px;font-size:.72rem;font-weight:800;cursor:pointer;background:none;font-family:inherit;color:var(--text-light);transition:all .12s;text-transform:uppercase}
+    .status-btn.active-present{background:var(--success);border-color:var(--success);color:#fff}
+    .status-btn.active-absent{background:var(--danger);border-color:var(--danger);color:#fff}
+    .status-btn.active-late{background:var(--warning);border-color:var(--warning);color:#fff}
+    .status-btn:hover{border-color:var(--primary);color:var(--primary)}
+
+    .session-row{display:flex;align-items:center;gap:.75rem;padding:.75rem;background:var(--surface);border:2px solid var(--border);border-radius:12px;margin-bottom:.5rem}
+    .session-date{font-weight:800;font-size:.9rem;min-width:90px}
+    .session-pills{display:flex;gap:.35rem;flex-wrap:wrap;flex:1}
+    .session-locked{font-size:.65rem;font-weight:800;padding:.15rem .5rem;border-radius:6px;background:var(--surface2);color:var(--text-light)}
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Teacher</div>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/quizzes.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/reports.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Reports
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Attendance</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">TC</div>
+          <span class="profile-name" id="topbar-name">Teacher</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Teacher</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main" style="max-width:900px">
+
+    <!-- Step indicator -->
+    <div class="step-indicator">
+      <div class="step active" id="step1-indicator">
+        <div class="step-dot">1</div><span>Select Class</span>
+      </div>
+      <div class="step-line" id="line1"></div>
+      <div class="step" id="step2-indicator">
+        <div class="step-dot">2</div><span>Mark Attendance</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Select batch/section/date -->
+    <div class="card" id="step1">
+      <div class="card-header"><div class="card-title">Select Class</div></div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;gap:.75rem">
+        <div class="form-group" style="margin:0">
+          <label>Batch</label>
+          <select id="sel-batch" class="form-group select" style="width:100%;padding:.75rem 1rem;border:2.5px solid var(--input-border);border-radius:14px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.9rem;font-weight:700;outline:none">
+            <option value="">Loading…</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Section</label>
+          <select id="sel-section" style="width:100%;padding:.75rem 1rem;border:2.5px solid var(--input-border);border-radius:14px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.9rem;font-weight:700;outline:none">
+            <option value="A">Section A</option>
+            <option value="B">Section B</option>
+            <option value="C">Section C</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Date</label>
+          <input type="date" id="sel-date" style="width:100%;padding:.75rem 1rem;border:2.5px solid var(--input-border);border-radius:14px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.9rem;font-weight:700;outline:none">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="load-roster-btn">Load Roster →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Roster + marking -->
+    <div class="card hidden" id="step2">
+      <div class="card-header">
+        <div>
+          <div class="card-title" id="roster-title">Roster</div>
+          <div style="font-size:.78rem;color:var(--text-light);font-weight:600;margin-top:.15rem" id="roster-sub"></div>
+        </div>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn btn-secondary btn-sm" id="mark-all-present">✓ All Present</button>
+          <button class="btn btn-secondary btn-sm" id="mark-all-absent">✗ All Absent</button>
+          <button class="btn btn-secondary btn-sm" id="back-btn">← Back</button>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="roster-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student Name</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="roster-tbody"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem;padding-top:1rem;border-top:2px solid var(--border)">
+        <div id="summary-text" style="font-size:.85rem;font-weight:700;color:var(--text-light)"></div>
+        <button class="btn btn-primary" id="submit-btn">Submit Attendance</button>
+      </div>
+    </div>
+
+    <!-- Past sessions -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Past Sessions</div>
+        <div style="display:flex;gap:.5rem">
+          <select id="filter-session-batch" style="padding:.4rem .75rem;border:2px solid var(--input-border);border-radius:10px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.8rem;font-weight:700;outline:none">
+            <option value="">All Batches</option>
+          </select>
+          <select id="filter-session-section" style="padding:.4rem .75rem;border:2px solid var(--input-border);border-radius:10px;background:var(--bg);color:var(--text);font-family:inherit;font-size:.8rem;font-weight:700;outline:none">
+            <option value="">All Sections</option>
+            <option value="A">Section A</option>
+            <option value="B">Section B</option>
+            <option value="C">Section C</option>
+          </select>
+        </div>
+      </div>
+      <div id="sessions-list"><div class="loading">Loading…</div></div>
+    </div>
+
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['teacher', 'admin']);
+
+    const token = getToken();
+    const user = getUser();
+    let batches = [];
+    let rosterStudents = [];
+    let attendance = {}; // student_id -> status
+    let allSessions = [];
+
+    // Theme & profile
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', n); localStorage.setItem('theme', n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t); setTimeout(() => t.remove(), 3000);
+    }
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Request failed');
+      return data;
+    }
+
+    // Set today's date
+    document.getElementById('sel-date').value = new Date().toISOString().split('T')[0];
+
+    // Load teacher's batches
+    async function loadBatches() {
+      batches = await api('/api/attendance/my-batches');
+      const sel = document.getElementById('sel-batch');
+      const fsel = document.getElementById('filter-session-batch');
+      sel.innerHTML = batches.length
+        ? batches.map(b => `<option value="${b.id}">${b.name}</option>`).join('')
+        : '<option value="">No batches assigned</option>';
+      batches.forEach(b => { fsel.innerHTML += `<option value="${b.id}">${b.name}</option>`; });
+    }
+
+    // Load roster (step 2)
+    document.getElementById('load-roster-btn').addEventListener('click', async () => {
+      const batchId = document.getElementById('sel-batch').value;
+      const section = document.getElementById('sel-section').value;
+      const date = document.getElementById('sel-date').value;
+      if (!batchId) { toast('Select a batch first', 'error'); return; }
+      const btn = document.getElementById('load-roster-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-inline"></span>';
+      try {
+        rosterStudents = await api(`/api/attendance/roster?batch_id=${batchId}&section=${section}`);
+        if (!rosterStudents.length) { toast('No students in this batch/section', 'info'); btn.disabled=false; btn.textContent='Load Roster →'; return; }
+        attendance = {};
+        rosterStudents.forEach(s => { attendance[s.id] = 'present'; });
+        const batchName = batches.find(b => b.id === batchId)?.name || '';
+        document.getElementById('roster-title').textContent = `${batchName} — Section ${section}`;
+        document.getElementById('roster-sub').textContent = new Date(date + 'T00:00:00').toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+        renderRoster();
+        document.getElementById('step1').classList.add('hidden');
+        document.getElementById('step2').classList.remove('hidden');
+        document.getElementById('step1-indicator').classList.remove('active');
+        document.getElementById('step1-indicator').classList.add('done');
+        document.getElementById('step1-indicator').querySelector('.step-dot').textContent = '✓';
+        document.getElementById('step2-indicator').classList.add('active');
+        document.getElementById('line1').classList.add('done');
+      } catch(e) { toast(e.message, 'error'); }
+      btn.disabled = false; btn.textContent = 'Load Roster →';
+    });
+
+    function renderRoster() {
+      const tbody = document.getElementById('roster-tbody');
+      tbody.innerHTML = rosterStudents.map((s, i) => `
+        <tr id="row-${s.id}">
+          <td style="color:var(--text-light);font-size:.8rem;font-weight:700">${i+1}</td>
+          <td><strong style="font-size:.9rem">${s.name}</strong></td>
+          <td>
+            <div style="display:flex;gap:.4rem">
+              <button class="status-btn ${attendance[s.id]==='present'?'active-present':''}" onclick="setStatus('${s.id}','present')">Present</button>
+              <button class="status-btn ${attendance[s.id]==='absent'?'active-absent':''}" onclick="setStatus('${s.id}','absent')">Absent</button>
+              <button class="status-btn ${attendance[s.id]==='late'?'active-late':''}" onclick="setStatus('${s.id}','late')">Late</button>
+            </div>
+          </td>
+        </tr>`).join('');
+      updateSummary();
+    }
+
+    window.setStatus = function(studentId, status) {
+      attendance[studentId] = status;
+      const row = document.getElementById(`row-${studentId}`);
+      row.querySelectorAll('.status-btn').forEach(btn => {
+        btn.classList.remove('active-present','active-absent','active-late');
+      });
+      row.querySelector(`.status-btn:nth-child(${status==='present'?1:status==='absent'?2:3})`).classList.add(`active-${status}`);
+      updateSummary();
+    };
+
+    function updateSummary() {
+      const vals = Object.values(attendance);
+      const p = vals.filter(v=>v==='present').length;
+      const a = vals.filter(v=>v==='absent').length;
+      const l = vals.filter(v=>v==='late').length;
+      document.getElementById('summary-text').innerHTML =
+        `<span style="color:var(--success)">✓ ${p} Present</span> &nbsp;
+         <span style="color:var(--danger)">✗ ${a} Absent</span> &nbsp;
+         <span style="color:var(--warning)">⏱ ${l} Late</span>`;
+    }
+
+    document.getElementById('mark-all-present').addEventListener('click', () => {
+      rosterStudents.forEach(s => { attendance[s.id] = 'present'; });
+      renderRoster();
+    });
+    document.getElementById('mark-all-absent').addEventListener('click', () => {
+      rosterStudents.forEach(s => { attendance[s.id] = 'absent'; });
+      renderRoster();
+    });
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      document.getElementById('step2').classList.add('hidden');
+      document.getElementById('step1').classList.remove('hidden');
+      document.getElementById('step1-indicator').classList.add('active');
+      document.getElementById('step1-indicator').classList.remove('done');
+      document.getElementById('step1-indicator').querySelector('.step-dot').textContent = '1';
+      document.getElementById('step2-indicator').classList.remove('active');
+      document.getElementById('line1').classList.remove('done');
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+      const batchId = document.getElementById('sel-batch').value;
+      const section = document.getElementById('sel-section').value;
+      const date = document.getElementById('sel-date').value;
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-inline"></span> Submitting…';
+      try {
+        await api('/api/attendance/submit', {
+          method: 'POST',
+          body: JSON.stringify({
+            batch_id: batchId,
+            section,
+            date,
+            records: Object.entries(attendance).map(([student_id, status]) => ({ student_id, status }))
+          })
+        });
+        toast('Attendance submitted and locked ✓');
+        // Reset to step 1
+        document.getElementById('back-btn').click();
+        await loadSessions();
+      } catch(e) { toast(e.message, 'error'); }
+      btn.disabled = false; btn.textContent = 'Submit Attendance';
+    });
+
+    // Past sessions
+    async function loadSessions() {
+      try {
+        allSessions = await api('/api/attendance/sessions');
+        renderSessions(allSessions);
+      } catch { document.getElementById('sessions-list').innerHTML = '<div class="empty-state"><div class="empty-text">Failed to load sessions</div></div>'; }
+    }
+
+    function renderSessions(sessions) {
+      const container = document.getElementById('sessions-list');
+      if (!sessions.length) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No sessions yet</div><div class="empty-sub">Submit attendance to see history here</div></div>';
+        return;
+      }
+      container.innerHTML = sessions.map(s => {
+        const batchName = batches.find(b => b.id === s.batch_id)?.name || s.batch_id;
+        const pct = s.student_count ? Math.round(s.present_count / s.student_count * 100) : 0;
+        return `
+        <div class="session-row">
+          <div class="session-date">${new Date(s.date + 'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
+          <div style="flex:1">
+            <div style="font-size:.82rem;font-weight:700;margin-bottom:.3rem">${batchName} — Sec ${s.section}</div>
+            <div class="session-pills">
+              <span class="badge badge-green">${s.present_count} Present</span>
+              <span class="badge badge-red">${s.absent_count} Absent</span>
+              ${s.late_count ? `<span class="badge badge-yellow">${s.late_count} Late</span>` : ''}
+              <span class="badge badge-muted">${pct}% attendance</span>
+            </div>
+          </div>
+          <span class="session-locked">${s.is_locked ? '🔒 Locked' : 'Open'}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // Session filters
+    ['filter-session-batch','filter-session-section'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => {
+        const b = document.getElementById('filter-session-batch').value;
+        const sec = document.getElementById('filter-session-section').value;
+        renderSessions(allSessions.filter(s =>
+          (!b || s.batch_id === b) && (!sec || s.section === sec)
+        ));
+      });
+    });
+
+    await loadBatches();
+    await loadSessions();
+  </script>
+</body>
+</html>

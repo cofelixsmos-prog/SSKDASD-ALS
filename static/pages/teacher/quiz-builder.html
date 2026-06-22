@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Quiz Builder</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .builder-layout{display:grid;grid-template-columns:280px 1fr;gap:1rem;align-items:start}
+    .q-list-item{display:flex;align-items:center;gap:.5rem;padding:.6rem .75rem;border-radius:10px;border:2px solid var(--border);margin-bottom:.4rem;cursor:pointer;transition:border-color .15s,background .15s;font-size:.83rem;font-weight:700;background:var(--bg)}
+    .q-list-item:hover{border-color:var(--primary)}
+    .q-list-item.active{border-color:var(--primary);background:rgba(74,125,255,.06)}
+    .q-list-item .q-num{width:22px;height:22px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0}
+    .q-list-item.active .q-num{background:var(--primary);color:#fff}
+    .q-list-item .q-del{margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text-light);font-size:.85rem;padding:.1rem .3rem;border-radius:4px}
+    .q-list-item .q-del:hover{color:var(--danger)}
+    .option-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+    .option-row input[type=text]{flex:1;padding:.6rem .85rem;border:2px solid var(--input-border);border-radius:10px;font-size:.88rem;font-weight:600;font-family:inherit;background:var(--bg);color:var(--text);outline:none}
+    .option-row input[type=text]:focus{border-color:var(--input-focus)}
+    .option-row input[type=radio],.option-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);flex-shrink:0}
+    .option-row .del-opt{background:none;border:none;color:var(--text-light);cursor:pointer;font-size:1rem;padding:0 .25rem}
+    .option-row .del-opt:hover{color:var(--danger)}
+    .settings-bar{display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;margin-bottom:1rem;padding:1rem;background:var(--surface);border:2.5px solid var(--border);border-radius:14px}
+    .settings-bar .form-group{margin:0;min-width:140px}
+    .settings-bar label{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);display:block;margin-bottom:.3rem}
+    .settings-bar input,.settings-bar select{padding:.55rem .75rem;border:2px solid var(--input-border);border-radius:10px;font-size:.88rem;font-weight:700;font-family:inherit;background:var(--bg);color:var(--text);outline:none;width:100%}
+    .toggle-group{display:flex;align-items:center;gap:.5rem;font-size:.82rem;font-weight:700;color:var(--text-light)}
+    .bottom-bar{display:flex;justify-content:space-between;align-items:center;padding:1rem;background:var(--surface);border:2.5px solid var(--border);border-radius:14px;margin-top:1rem}
+    @media(max-width:768px){.builder-layout{grid-template-columns:1fr}}
+    /* AI Drawer */
+    .ai-drawer{position:fixed;top:0;right:0;height:100vh;width:420px;max-width:95vw;background:var(--bg);border-left:2.5px solid var(--border);z-index:280;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden}
+    .ai-drawer.open{transform:translateX(0)}
+    .ai-drawer-head{padding:1rem 1.25rem;border-bottom:2px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .ai-drawer-body{flex:1;overflow-y:auto;padding:1.25rem}
+    .ai-tabs{display:flex;gap:.35rem;background:var(--surface2);padding:.3rem;border-radius:10px;margin-bottom:1.1rem}
+    .ai-tab{flex:1;padding:.5rem;border:none;background:none;border-radius:8px;font-family:inherit;font-size:.83rem;font-weight:800;cursor:pointer;color:var(--text-light);transition:background .12s,color .12s}
+    .ai-tab.active{background:var(--bg);color:var(--primary);box-shadow:0 1px 6px rgba(0,0,0,.08)}
+    .ai-form-label{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);display:block;margin-bottom:.35rem}
+    .ai-input{width:100%;padding:.65rem .85rem;border:2px solid var(--input-border);border-radius:10px;font-family:inherit;font-size:.88rem;font-weight:600;background:var(--bg);color:var(--text);outline:none;margin-bottom:.75rem}
+    .ai-input:focus{border-color:var(--primary)}
+    .ai-select{width:100%;padding:.65rem .85rem;border:2px solid var(--input-border);border-radius:10px;font-family:inherit;font-size:.88rem;font-weight:700;background:var(--bg);color:var(--text);outline:none;margin-bottom:.75rem}
+    .ai-review-card{border:2px solid var(--border);border-radius:12px;padding:.9rem 1rem;margin-bottom:.6rem;font-size:.83rem}
+    .ai-review-q{font-weight:800;margin-bottom:.4rem;line-height:1.4}
+    .ai-review-opt{display:flex;align-items:center;gap:.35rem;padding:.25rem 0;color:var(--text-light);font-weight:600}
+    .ai-review-opt.correct-opt{color:var(--success);font-weight:800}
+    .ai-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:279;display:none}
+    .ai-overlay.open{display:block}
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Teacher</div>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/attendance.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/reports.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Reports
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2 id="page-title">New Quiz</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">TC</div>
+          <span class="profile-name" id="topbar-name">Teacher</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Teacher</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Quiz settings bar -->
+    <div class="settings-bar">
+      <div class="form-group" style="flex:2;min-width:180px">
+        <label>Quiz Title *</label>
+        <input type="text" id="q-title" placeholder="e.g. Chapter 3 MCQ Test">
+      </div>
+      <div class="form-group" style="flex:1;min-width:130px">
+        <label>Subject *</label>
+        <input type="text" id="q-subject" placeholder="e.g. Physics">
+      </div>
+      <div class="form-group" style="min-width:100px">
+        <label>Timer (min)</label>
+        <input type="number" id="q-timer" value="30" min="1" max="180">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <label class="toggle-group"><input type="checkbox" id="q-shuffle-q" style="width:16px;height:16px;accent-color:var(--primary)"> Shuffle Questions</label>
+        <label class="toggle-group"><input type="checkbox" id="q-shuffle-o" style="width:16px;height:16px;accent-color:var(--primary)"> Shuffle Options</label>
+        <label class="toggle-group"><input type="checkbox" id="q-show-ans" checked style="width:16px;height:16px;accent-color:var(--primary)"> Show Answers on Close</label>
+      </div>
+    </div>
+
+    <!-- Two-panel builder -->
+    <div class="builder-layout">
+
+      <!-- Left: question list -->
+      <div>
+        <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:.5rem">Questions (<span id="q-count">0</span>)</div>
+        <div id="q-list"></div>
+        <button class="btn btn-secondary" id="add-q-btn" style="width:100%;margin-top:.5rem">＋ Add Question</button>
+      </div>
+
+      <!-- Right: question editor -->
+      <div class="card" id="editor-panel">
+        <div class="empty-state">
+          <div class="empty-icon">✏️</div>
+          <div class="empty-text">No question selected</div>
+          <div class="empty-sub">Click "+ Add Question" or select one from the list</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom action bar -->
+    <div class="bottom-bar">
+      <button class="btn btn-secondary" onclick="location.href='/static/pages/teacher/quizzes.html'">← Back to Quizzes</button>
+      <div style="display:flex;gap:.75rem">
+        <button class="btn btn-secondary" id="ai-open-btn" title="Generate questions with AI">🤖 AI Generate</button>
+        <button class="btn btn-secondary" id="save-draft-btn">💾 Save Draft</button>
+        <button class="btn btn-primary" id="save-launch-btn">▶ Save &amp; Launch</button>
+      </div>
+    </div>
+
+  <!-- AI Drawer overlay -->
+  <div class="ai-overlay" id="ai-overlay"></div>
+
+  <!-- AI Drawer -->
+  <div class="ai-drawer" id="ai-drawer">
+    <div class="ai-drawer-head">
+      <div style="font-size:1rem;font-weight:900">🤖 AI Quiz Generator</div>
+      <button class="btn btn-icon btn-secondary" id="ai-close-btn" style="width:32px;height:32px;font-size:1.1rem">✕</button>
+    </div>
+    <div class="ai-drawer-body">
+      <div class="ai-tabs">
+        <button class="ai-tab active" id="tab-topic" onclick="switchAiTab('topic')">📝 From Topic</button>
+        <button class="ai-tab" id="tab-pdf" onclick="switchAiTab('pdf')">📄 From PDF</button>
+      </div>
+
+      <!-- Topic panel -->
+      <div id="ai-topic-panel">
+        <label class="ai-form-label">Topic or Description</label>
+        <textarea class="ai-input" id="ai-topic" rows="4" placeholder="e.g. Newton's Laws of Motion, Class 11 Physics…"></textarea>
+        <label class="ai-form-label">Number of Questions</label>
+        <input type="number" class="ai-input" id="ai-count" value="5" min="1" max="30">
+        <label class="ai-form-label">Question Type</label>
+        <select class="ai-select" id="ai-qtype">
+          <option value="mcq">Multiple Choice (MCQ)</option>
+          <option value="short_answer">Short Answer</option>
+          <option value="mix">Mix (MCQ + Short Answer)</option>
+        </select>
+        <label class="ai-form-label">Difficulty</label>
+        <select class="ai-select" id="ai-difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+        <button class="btn btn-primary" id="ai-gen-topic-btn" style="width:100%">✨ Generate Questions</button>
+      </div>
+
+      <!-- PDF panel -->
+      <div id="ai-pdf-panel" style="display:none">
+        <label class="ai-form-label">Upload PDF (max 10MB)</label>
+        <input type="file" id="ai-pdf-file" accept=".pdf" class="ai-input" style="padding:.4rem">
+        <label class="ai-form-label">Number of Questions</label>
+        <input type="number" class="ai-input" id="ai-pdf-count" value="5" min="1" max="30">
+        <label class="ai-form-label">Question Type</label>
+        <select class="ai-select" id="ai-pdf-qtype">
+          <option value="mcq">Multiple Choice (MCQ)</option>
+          <option value="short_answer">Short Answer</option>
+          <option value="mix">Mix</option>
+        </select>
+        <label class="ai-form-label">Difficulty</label>
+        <select class="ai-select" id="ai-pdf-difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+        <button class="btn btn-primary" id="ai-gen-pdf-btn" style="width:100%">✨ Generate from PDF</button>
+      </div>
+
+      <!-- Generated questions review -->
+      <div id="ai-review-panel" style="display:none;margin-top:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light)">Generated Questions</div>
+          <button class="btn btn-primary btn-sm" id="ai-approve-all-btn">✓ Approve All</button>
+        </div>
+        <div id="ai-q-review-list"></div>
+      </div>
+    </div>
+  </div>
+
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['teacher', 'admin']);
+
+    const token = getToken();
+    const user = getUser();
+    let questions = [];   // [{type, text, options[], correct_answers[], points, case_sensitive}]
+    let activeIdx = -1;
+    let editingQuizId = null;
+
+    // Theme & profile
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', n); localStorage.setItem('theme', n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t); setTimeout(() => t.remove(), 3500);
+    }
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      return data;
+    }
+
+    // Load existing quiz if ?id= present
+    const params = new URLSearchParams(location.search);
+    editingQuizId = params.get('id');
+    if (editingQuizId) {
+      document.getElementById('page-title').textContent = 'Edit Quiz';
+      api(`/api/quizzes/${editingQuizId}`).then(quiz => {
+        document.getElementById('q-title').value = quiz.title;
+        document.getElementById('q-subject').value = quiz.subject;
+        document.getElementById('q-timer').value = quiz.timer_minutes;
+        document.getElementById('q-shuffle-q').checked = quiz.shuffle_questions;
+        document.getElementById('q-shuffle-o').checked = quiz.shuffle_options;
+        document.getElementById('q-show-ans').checked = quiz.show_answers_on_close;
+        questions = (quiz.questions || []).map(q => ({
+          type: q.type,
+          text: q.text,
+          options: q.options || [],
+          correct_answers: q.correct_answers || [],
+          points: q.points || 1,
+          case_sensitive: q.case_sensitive || false,
+        }));
+        renderList();
+        if (questions.length) selectQuestion(0);
+      }).catch(() => toast('Failed to load quiz', 'error'));
+    }
+
+    // ── Question list ──────────────────────────────────────────────
+
+    function renderList() {
+      const list = document.getElementById('q-list');
+      document.getElementById('q-count').textContent = questions.length;
+      if (!questions.length) { list.innerHTML = '<div style="font-size:.8rem;color:var(--text-light);text-align:center;padding:.75rem">No questions yet</div>'; return; }
+      list.innerHTML = questions.map((q, i) => `
+        <div class="q-list-item ${i === activeIdx ? 'active' : ''}" onclick="selectQuestion(${i})">
+          <span class="q-num">${i+1}</span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.8rem">${q.text || '(empty)'}</span>
+          <span style="font-size:.65rem;font-weight:800;color:var(--text-light);margin-right:.25rem">${q.type === 'mcq' ? 'MCQ' : 'SA'}</span>
+          <button class="q-del" onclick="event.stopPropagation();deleteQuestion(${i})" title="Delete">✕</button>
+        </div>`).join('');
+    }
+
+    window.selectQuestion = function(idx) {
+      if (activeIdx >= 0) saveCurrentEditor();
+      activeIdx = idx;
+      renderList();
+      renderEditor();
+    };
+
+    window.deleteQuestion = function(idx) {
+      if (!confirm('Delete this question?')) return;
+      questions.splice(idx, 1);
+      if (activeIdx >= questions.length) activeIdx = questions.length - 1;
+      renderList();
+      if (activeIdx >= 0) renderEditor();
+      else document.getElementById('editor-panel').innerHTML = '<div class="empty-state"><div class="empty-icon">✏️</div><div class="empty-text">No question selected</div></div>';
+    };
+
+    document.getElementById('add-q-btn').addEventListener('click', () => {
+      if (activeIdx >= 0) saveCurrentEditor();
+      questions.push({ type: 'mcq', text: '', options: ['', ''], correct_answers: [], points: 1, case_sensitive: false });
+      activeIdx = questions.length - 1;
+      renderList();
+      renderEditor();
+    });
+
+    // ── Question editor ────────────────────────────────────────────
+
+    function renderEditor() {
+      const q = questions[activeIdx];
+      if (!q) return;
+
+      const optionsHtml = q.type === 'mcq' ? `
+        <div style="margin-bottom:.75rem">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;color:var(--text-light);margin-bottom:.5rem">Options <span style="font-weight:600">(select correct answer(s))</span></div>
+          <div id="options-container">
+            ${q.options.map((opt, oi) => `
+              <div class="option-row" id="opt-row-${oi}">
+                <input type="checkbox" ${q.correct_answers.includes(String(oi)) ? 'checked' : ''} data-oi="${oi}" class="correct-cb">
+                <input type="text" value="${escHtml(opt)}" placeholder="Option ${oi+1}" data-oi="${oi}" class="opt-text">
+                <button class="del-opt" onclick="removeOption(${oi})">✕</button>
+              </div>`).join('')}
+          </div>
+          <button class="btn btn-secondary btn-sm" id="add-opt-btn" style="margin-top:.35rem">＋ Add Option</button>
+        </div>` : `
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:.72rem;font-weight:800;text-transform:uppercase;color:var(--text-light);display:block;margin-bottom:.4rem">Accepted Answers <span style="font-weight:600">(one per line)</span></label>
+          <textarea id="sa-answers" rows="3" style="width:100%;padding:.75rem;border:2px solid var(--input-border);border-radius:12px;font-family:inherit;font-size:.88rem;font-weight:600;background:var(--bg);color:var(--text);outline:none;resize:vertical">${q.correct_answers.join('\n')}</textarea>
+          <label style="display:flex;align-items:center;gap:.5rem;margin-top:.4rem;font-size:.82rem;font-weight:700;color:var(--text-light)">
+            <input type="checkbox" ${q.case_sensitive ? 'checked' : ''} id="case-sensitive-cb" style="width:15px;height:15px;accent-color:var(--primary)"> Case-sensitive matching
+          </label>
+        </div>`;
+
+      document.getElementById('editor-panel').innerHTML = `
+        <div class="card-header" style="margin-bottom:1rem">
+          <div class="card-title">Question ${activeIdx + 1}</div>
+          <select id="q-type-sel" style="padding:.45rem .75rem;border:2px solid var(--input-border);border-radius:10px;font-size:.85rem;font-weight:700;font-family:inherit;background:var(--bg);color:var(--text);outline:none">
+            <option value="mcq" ${q.type==='mcq'?'selected':''}>Multiple Choice (MCQ)</option>
+            <option value="short_answer" ${q.type==='short_answer'?'selected':''}>Short Answer</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:.72rem;font-weight:800;text-transform:uppercase;color:var(--text-light);display:block;margin-bottom:.4rem">Question Text *</label>
+          <textarea id="q-text" rows="3" placeholder="Type your question here…" style="width:100%;padding:.75rem;border:2px solid var(--input-border);border-radius:12px;font-family:inherit;font-size:.9rem;font-weight:600;background:var(--bg);color:var(--text);outline:none;resize:vertical">${escHtml(q.text)}</textarea>
+        </div>
+
+        ${optionsHtml}
+
+        <div style="display:flex;align-items:center;gap:.75rem;margin-top:.5rem">
+          <label style="font-size:.72rem;font-weight:800;text-transform:uppercase;color:var(--text-light)">Points</label>
+          <input type="number" id="q-points" value="${q.points}" min="1" max="100" style="width:70px;padding:.45rem .6rem;border:2px solid var(--input-border);border-radius:10px;font-size:.9rem;font-weight:800;font-family:inherit;background:var(--bg);color:var(--text);outline:none;text-align:center">
+        </div>`;
+
+      // Bind type change
+      document.getElementById('q-type-sel').addEventListener('change', e => {
+        saveCurrentEditor();
+        questions[activeIdx].type = e.target.value;
+        if (e.target.value === 'mcq' && !questions[activeIdx].options.length) questions[activeIdx].options = ['', ''];
+        renderEditor();
+      });
+
+      if (q.type === 'mcq') {
+        document.getElementById('add-opt-btn').addEventListener('click', () => {
+          saveCurrentEditor();
+          questions[activeIdx].options.push('');
+          renderEditor();
+        });
+      }
+    }
+
+    window.removeOption = function(oi) {
+      saveCurrentEditor();
+      questions[activeIdx].options.splice(oi, 1);
+      questions[activeIdx].correct_answers = questions[activeIdx].correct_answers
+        .map(Number).filter(i => i !== oi).map(i => i > oi ? i-1 : i).map(String);
+      renderEditor();
+    };
+
+    function saveCurrentEditor() {
+      if (activeIdx < 0 || !document.getElementById('q-text')) return;
+      const q = questions[activeIdx];
+      q.text = document.getElementById('q-text')?.value || q.text;
+      q.points = parseInt(document.getElementById('q-points')?.value || 1);
+      q.type = document.getElementById('q-type-sel')?.value || q.type;
+
+      if (q.type === 'mcq') {
+        const texts = Array.from(document.querySelectorAll('.opt-text')).map(i => i.value);
+        const checked = Array.from(document.querySelectorAll('.correct-cb:checked')).map(i => i.dataset.oi);
+        q.options = texts;
+        q.correct_answers = checked;
+      } else {
+        const raw = document.getElementById('sa-answers')?.value || '';
+        q.correct_answers = raw.split('\n').map(s => s.trim()).filter(Boolean);
+        q.case_sensitive = document.getElementById('case-sensitive-cb')?.checked || false;
+      }
+    }
+
+    function escHtml(str) {
+      return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Save ──────────────────────────────────────────────────────
+
+    function buildPayload() {
+      if (activeIdx >= 0) saveCurrentEditor();
+      const title = document.getElementById('q-title').value.trim();
+      const subject = document.getElementById('q-subject').value.trim();
+      if (!title || !subject) throw new Error('Title and subject are required');
+      if (!questions.length) throw new Error('Add at least one question');
+      for (let i = 0; i < questions.length; i++) {
+        if (!questions[i].text.trim()) throw new Error(`Question ${i+1} has no text`);
+        if (questions[i].type === 'mcq' && !questions[i].correct_answers.length) throw new Error(`Question ${i+1} has no correct answer selected`);
+        if (questions[i].type === 'short_answer' && !questions[i].correct_answers.length) throw new Error(`Question ${i+1} needs at least one accepted answer`);
+      }
+      return {
+        title,
+        subject,
+        timer_minutes: parseInt(document.getElementById('q-timer').value) || 30,
+        shuffle_questions: document.getElementById('q-shuffle-q').checked,
+        shuffle_options: document.getElementById('q-shuffle-o').checked,
+        show_answers_on_close: document.getElementById('q-show-ans').checked,
+        questions: questions.map((q, i) => ({ ...q, order: i })),
+      };
+    }
+
+    async function save(launch=false) {
+      let payload;
+      try { payload = buildPayload(); } catch(e) { toast(e.message, 'error'); return null; }
+      const btn = launch ? document.getElementById('save-launch-btn') : document.getElementById('save-draft-btn');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-inline"></span>';
+      try {
+        let quiz;
+        if (editingQuizId) {
+          quiz = await api(`/api/quizzes/${editingQuizId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+        } else {
+          quiz = await api('/api/quizzes', { method: 'POST', body: JSON.stringify(payload) });
+          editingQuizId = quiz.id;
+          history.replaceState({}, '', `?id=${quiz.id}`);
+        }
+        if (launch) {
+          const r = await api(`/api/quizzes/${editingQuizId}/launch`, { method: 'POST' });
+          toast(`Quiz launched! Code: ${r.code}`);
+          setTimeout(() => location.href = `/static/pages/teacher/monitor.html?id=${editingQuizId}`, 1000);
+        } else {
+          toast('Draft saved ✓');
+          document.getElementById('page-title').textContent = 'Edit Quiz';
+        }
+        return quiz;
+      } catch(e) { toast(e.message, 'error'); return null; }
+      finally { btn.disabled = false; btn.textContent = launch ? '▶ Save & Launch' : '💾 Save Draft'; }
+    }
+
+    document.getElementById('save-draft-btn').addEventListener('click', () => save(false));
+    document.getElementById('save-launch-btn').addEventListener('click', () => save(true));
+
+    // ── AI Drawer ─────────────────────────────────────────────────
+
+    let aiGenerated = [];  // [{...question, approved: false}]
+
+    function openAiDrawer() {
+      document.getElementById('ai-drawer').classList.add('open');
+      document.getElementById('ai-overlay').classList.add('open');
+    }
+    function closeAiDrawer() {
+      document.getElementById('ai-drawer').classList.remove('open');
+      document.getElementById('ai-overlay').classList.remove('open');
+    }
+    document.getElementById('ai-open-btn').addEventListener('click', openAiDrawer);
+    document.getElementById('ai-close-btn').addEventListener('click', closeAiDrawer);
+    document.getElementById('ai-overlay').addEventListener('click', closeAiDrawer);
+
+    window.switchAiTab = function(tab) {
+      document.getElementById('ai-topic-panel').style.display = tab === 'topic' ? 'block' : 'none';
+      document.getElementById('ai-pdf-panel').style.display = tab === 'pdf' ? 'block' : 'none';
+      document.getElementById('tab-topic').classList.toggle('active', tab === 'topic');
+      document.getElementById('tab-pdf').classList.toggle('active', tab === 'pdf');
+    };
+
+    function renderAiReview() {
+      const list = document.getElementById('ai-q-review-list');
+      if (!aiGenerated.length) { list.innerHTML = ''; return; }
+      list.innerHTML = aiGenerated.map((q, i) => `
+        <div class="ai-review-card" id="ai-card-${i}" style="${q.approved ? 'opacity:.5' : ''}">
+          <div class="ai-review-q">${i+1}. ${escHtml(q.text)}</div>
+          ${q.type === 'mcq' ? q.options.map((opt, oi) => `
+            <div class="ai-review-opt ${q.correct_answers.includes(String(oi)) ? 'correct-opt' : ''}">
+              ${q.correct_answers.includes(String(oi)) ? '✓' : '○'} ${escHtml(opt)}
+            </div>`).join('') : `<div class="ai-review-opt correct-opt">✓ ${escHtml((q.correct_answers || []).join(', '))}</div>`}
+          <div style="display:flex;gap:.4rem;margin-top:.6rem">
+            ${q.approved
+              ? `<span style="font-size:.75rem;font-weight:800;color:var(--success)">✓ Added to quiz</span>`
+              : `<button class="btn btn-primary btn-sm" onclick="approveAiQ(${i})">✓ Add</button>
+                 <button class="btn btn-secondary btn-sm" onclick="removeAiQ(${i})">✕ Remove</button>`
+            }
+          </div>
+        </div>`).join('');
+    }
+
+    window.approveAiQ = function(i) {
+      const q = aiGenerated[i];
+      if (!q || q.approved) return;
+      questions.push({
+        type: q.type,
+        text: q.text,
+        options: q.options || [],
+        correct_answers: q.correct_answers || [],
+        points: q.points || 1,
+        case_sensitive: q.case_sensitive || false,
+      });
+      aiGenerated[i].approved = true;
+      renderList();
+      renderAiReview();
+      toast(`Question ${i+1} added!`);
+    };
+
+    window.removeAiQ = function(i) {
+      aiGenerated.splice(i, 1);
+      renderAiReview();
+    };
+
+    document.getElementById('ai-approve-all-btn').addEventListener('click', () => {
+      aiGenerated.forEach((q, i) => { if (!q.approved) approveAiQ(i); });
+    });
+
+    async function runAiGenerate(payload, btn) {
+      btn.disabled = true;
+      const orig = btn.textContent;
+      btn.innerHTML = '<span class="spinner-inline"></span> Generating…';
+      try {
+        const res = await fetch('/api/ai/generate-from-topic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'AI failed');
+        aiGenerated = (data.questions || []).map(q => ({ ...q, approved: false }));
+        document.getElementById('ai-review-panel').style.display = 'block';
+        renderAiReview();
+        toast(`${aiGenerated.length} questions generated!`);
+      } catch(e) { toast(e.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = orig; }
+    }
+
+    async function runAiPdf(btn) {
+      const file = document.getElementById('ai-pdf-file').files[0];
+      if (!file) { toast('Select a PDF file', 'error'); return; }
+      btn.disabled = true;
+      const orig = btn.textContent;
+      btn.innerHTML = '<span class="spinner-inline"></span> Processing…';
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('count', document.getElementById('ai-pdf-count').value);
+        fd.append('q_type', document.getElementById('ai-pdf-qtype').value);
+        fd.append('difficulty', document.getElementById('ai-pdf-difficulty').value);
+        const res = await fetch('/api/ai/generate-from-pdf', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'AI failed');
+        aiGenerated = (data.questions || []).map(q => ({ ...q, approved: false }));
+        document.getElementById('ai-review-panel').style.display = 'block';
+        renderAiReview();
+        toast(`${aiGenerated.length} questions generated from PDF!`);
+      } catch(e) { toast(e.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = orig; }
+    }
+
+    document.getElementById('ai-gen-topic-btn').addEventListener('click', () => {
+      const topic = document.getElementById('ai-topic').value.trim();
+      if (!topic) { toast('Enter a topic', 'error'); return; }
+      runAiGenerate({
+        topic,
+        count: parseInt(document.getElementById('ai-count').value) || 5,
+        q_type: document.getElementById('ai-qtype').value,
+        difficulty: document.getElementById('ai-difficulty').value,
+      }, document.getElementById('ai-gen-topic-btn'));
+    });
+
+    document.getElementById('ai-gen-pdf-btn').addEventListener('click', () => {
+      runAiPdf(document.getElementById('ai-gen-pdf-btn'));
+    });
+  </script>
+</body>
+</html>

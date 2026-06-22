@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Quiz Review</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    .ai-summary-card{background:var(--accent-light);border:2px solid var(--primary);border-radius:16px;padding:1.1rem 1.35rem;margin-bottom:1.25rem;font-size:.88rem;font-weight:700;font-style:italic;color:var(--text);line-height:1.6}
+    .ai-summary-card .ai-label{font-size:.65rem;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--primary);margin-bottom:.4rem;font-style:normal}
+    .review-q-card{border:2.5px solid var(--border);border-radius:16px;padding:1.1rem 1.35rem;margin-bottom:.75rem;transition:border-color .15s}
+    .review-q-card.correct{border-color:var(--success)}
+    .review-q-card.wrong{border-color:var(--danger)}
+    .review-q-header{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.6rem}
+    .review-q-text{font-size:.93rem;font-weight:800;line-height:1.5;flex:1}
+    .review-pts{font-size:.75rem;font-weight:800;padding:.2rem .5rem;border-radius:6px;white-space:nowrap;flex-shrink:0}
+    .ans-row{font-size:.83rem;font-weight:700;padding:.35rem .7rem;border-radius:8px;margin-top:.3rem;display:inline-block}
+    .ans-correct{background:#58cc0222;color:var(--success)}
+    .ans-wrong{background:#ff4b4b18;color:var(--danger)}
+    .ans-teacher{background:var(--surface2);color:var(--text-mid)}
+    .ai-explain{background:#f59e0b18;border:1.5px solid #f59e0b55;border-radius:10px;padding:.65rem .85rem;margin-top:.6rem;font-size:.8rem;font-weight:700;color:var(--text);line-height:1.5}
+    .ai-explain .ai-icon{font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:#f59e0b;display:block;margin-bottom:.2rem}
+    .score-summary{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem}
+    .score-box{flex:1;min-width:100px;padding:.85rem 1rem;background:var(--surface);border:2.5px solid var(--border);border-radius:14px;text-align:center}
+    .score-box-val{font-size:1.7rem;font-weight:900;line-height:1}
+    .score-box-lbl{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-top:.2rem}
+    .skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:10px;height:20px;margin-bottom:.5rem}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Student</div>
+        <button class="nav-item" onclick="location.href='/static/pages/student/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/student/attendance.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2 id="page-title">Quiz Review</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">ST</div>
+          <span class="profile-name" id="topbar-name">Student</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Student</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div style="max-width:760px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/student/quizzes.html'">← Back to Quizzes</button>
+        <div id="meta-date" style="font-size:.8rem;color:var(--text-light);font-weight:600"></div>
+      </div>
+
+      <!-- Score summary -->
+      <div class="score-summary" id="score-summary">
+        <div class="score-box"><div class="skeleton" style="width:60px;margin:0 auto"></div></div>
+        <div class="score-box"><div class="skeleton" style="width:60px;margin:0 auto"></div></div>
+        <div class="score-box"><div class="skeleton" style="width:60px;margin:0 auto"></div></div>
+      </div>
+
+      <!-- AI summary -->
+      <div id="ai-summary-wrap">
+        <div class="ai-summary-card">
+          <div class="ai-label">🤖 AI Analysis</div>
+          <div class="skeleton" style="width:90%"></div>
+          <div class="skeleton" style="width:75%"></div>
+          <div class="skeleton" style="width:82%"></div>
+        </div>
+      </div>
+
+      <!-- Question list -->
+      <div id="q-review-list">
+        <div class="review-q-card"><div class="skeleton"></div><div class="skeleton" style="width:60%"></div></div>
+        <div class="review-q-card"><div class="skeleton"></div><div class="skeleton" style="width:70%"></div></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['student']);
+
+    const token = getToken();
+    const user = getUser();
+
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme')==='dark'?'light':'dark'; html.setAttribute('data-theme',n); localStorage.setItem('theme',n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t); setTimeout(() => t.remove(), 4000);
+    }
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      return data;
+    }
+
+    function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    const params = new URLSearchParams(location.search);
+    const subId = params.get('id');
+    if (!subId) location.href = '/static/pages/student/quizzes.html';
+
+    api(`/api/student/submissions/${subId}`).then(sub => {
+      document.getElementById('page-title').textContent = sub.quiz_title;
+      document.getElementById('meta-date').textContent = `Submitted ${new Date(sub.submitted_at).toLocaleString()}`;
+
+      const pct = sub.total_points ? Math.round((sub.score / sub.total_points) * 100) : 0;
+      const correct = (sub.results || []).filter(r => r.is_correct).length;
+      const wrong = (sub.results || []).length - correct;
+
+      document.getElementById('score-summary').innerHTML = `
+        <div class="score-box">
+          <div class="score-box-val" style="color:var(--primary)">${sub.score} / ${sub.total_points}</div>
+          <div class="score-box-lbl">Score</div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-val" style="color:${pct>=60?'var(--success)':'var(--danger)'}">${pct}%</div>
+          <div class="score-box-lbl">Percentage</div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-val" style="color:var(--success)">${correct}</div>
+          <div class="score-box-lbl">Correct</div>
+        </div>
+        <div class="score-box">
+          <div class="score-box-val" style="color:var(--danger)">${wrong}</div>
+          <div class="score-box-lbl">Wrong</div>
+        </div>
+        ${sub.auto_submitted ? `<div class="score-box"><div class="score-box-val" style="color:#f59e0b">⏰</div><div class="score-box-lbl">Auto-submitted</div></div>` : ''}`;
+
+      // AI summary
+      const aiWrap = document.getElementById('ai-summary-wrap');
+      if (sub.ai_analysis?.summary) {
+        aiWrap.innerHTML = `<div class="ai-summary-card">
+          <div class="ai-label">🤖 AI Study Coach</div>
+          ${escHtml(sub.ai_analysis.summary)}
+        </div>`;
+      } else {
+        aiWrap.innerHTML = '';
+      }
+
+      // Question review
+      const qList = document.getElementById('q-review-list');
+      if (!sub.results || !sub.results.length) {
+        qList.innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div class="empty-text">Answer review not available</div><div class="empty-sub">Teacher did not enable answer reveal for this quiz</div></div>';
+        return;
+      }
+
+      // Build AI explanations map
+      const aiMap = {};
+      if (sub.ai_analysis?.per_question) {
+        sub.ai_analysis.per_question.forEach(p => {
+          aiMap[p.question_text] = p.explanation;
+        });
+      }
+
+      qList.innerHTML = sub.results.map((r, i) => {
+        const correct = r.is_correct;
+        const explain = aiMap[r.question_text];
+        return `
+          <div class="review-q-card ${correct ? 'correct' : 'wrong'}">
+            <div class="review-q-header">
+              <div class="review-q-text">${i+1}. ${escHtml(r.question_text)}</div>
+              <span class="review-pts ${correct ? 'ans-correct' : 'ans-wrong'}">${correct ? '+' : '0'}${r.points || 1}pt</span>
+            </div>
+            <div><span class="ans-row ${correct ? 'ans-correct' : 'ans-wrong'}">Your answer: ${escHtml(r.student_answer || '(blank)')}</span></div>
+            ${!correct ? `<div><span class="ans-row ans-teacher">Correct: ${escHtml(r.correct_answer)}</span></div>` : ''}
+            ${!correct && explain ? `<div class="ai-explain"><span class="ai-icon">🤖 AI Explanation</span>${escHtml(explain)}</div>` : ''}
+          </div>`;
+      }).join('');
+
+    }).catch(e => {
+      toast(e.message, 'error');
+      document.getElementById('q-review-list').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">${e.message}</div></div>`;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Admin Dashboard</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Admin</div>
+        <button class="nav-item active" onclick="location.href='/static/pages/admin/index.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/admin/accounts.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Accounts
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/admin/batches.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>Batches
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Dashboard</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span>
+      <button class="theme-toggle" id="theme-toggle"></button>
+      <span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">AD</div>
+          <span class="profile-name" id="topbar-name">Admin</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header">
+            <div class="dd-name" id="dd-name"></div>
+            <div class="dd-class">Administrator</div>
+          </div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-sub">All accounts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Students</div>
+        <div class="stat-value" id="stat-students">—</div>
+        <div class="stat-sub">Active learners</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Teachers</div>
+        <div class="stat-value" id="stat-teachers">—</div>
+        <div class="stat-sub">Instructors</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Parents</div>
+        <div class="stat-value" id="stat-parents">—</div>
+        <div class="stat-sub">Linked guardians</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Quick Actions</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="location.href='/static/pages/admin/accounts.html'">Manage Accounts</button>
+        <button class="btn btn-secondary" onclick="location.href='/static/pages/admin/batches.html'">Manage Batches</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recent Accounts</div>
+        <button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/admin/accounts.html'">View All</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+          <tbody id="recent-users"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['admin']);
+
+    const token = getToken();
+    const user = getUser();
+
+    // Theme
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => {
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+    };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+
+    // Profile
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => {
+      document.getElementById('profile-dropdown').classList.toggle('hidden');
+    });
+    document.addEventListener('click', e => {
+      if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden');
+    });
+
+    // Sidebar toggle (mobile)
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) sidebarToggle.style.display = 'flex';
+    sidebarToggle.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    // Load stats
+    async function loadStats() {
+      const res = await fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const users = await res.json();
+      document.getElementById('stat-total').textContent = users.length;
+      document.getElementById('stat-students').textContent = users.filter(u => u.role === 'student').length;
+      document.getElementById('stat-teachers').textContent = users.filter(u => u.role === 'teacher').length;
+      document.getElementById('stat-parents').textContent = users.filter(u => u.role === 'parent').length;
+
+      const tbody = document.getElementById('recent-users');
+      const recent = users.slice(0, 5);
+      if (!recent.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-light);padding:1.5rem">No users yet</td></tr>';
+        return;
+      }
+      tbody.innerHTML = recent.map(u => `
+        <tr>
+          <td><strong>${u.name}</strong></td>
+          <td style="color:var(--text-light)">${u.email}</td>
+          <td><span class="badge ${roleBadge(u.role)}">${u.role}</span></td>
+          <td><span class="badge ${u.is_active ? 'badge-green' : 'badge-red'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+        </tr>`).join('');
+    }
+
+    function roleBadge(role) {
+      return { admin: 'badge-primary', teacher: 'badge-primary', student: 'badge-green', parent: 'badge-yellow' }[role] || 'badge-muted';
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>

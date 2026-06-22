@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Take Quiz</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  <style>
+    body.quiz-active{background:var(--bg)}
+    .quiz-shell{max-width:720px;margin:0 auto;padding:1.25rem}
+    /* Pre-start */
+    .prestart-card{background:var(--surface);border:2.5px solid var(--border);border-radius:20px;padding:2.5rem;text-align:center;max-width:440px;margin:80px auto}
+    .prestart-card .quiz-icon{font-size:3rem;margin-bottom:.75rem}
+    .prestart-card h2{font-size:1.6rem;font-weight:900;margin-bottom:.2rem}
+    .prestart-card .q-meta{font-size:.85rem;font-weight:600;color:var(--text-light);margin-bottom:1.5rem}
+    .prestart-stats{display:flex;justify-content:center;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+    .prestart-stat{text-align:center}
+    .prestart-stat-val{font-size:1.6rem;font-weight:900;color:var(--primary)}
+    .prestart-stat-lbl{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light)}
+    .warn-banner{background:#ff4b4b18;border:2px solid #ff4b4b44;color:var(--danger);border-radius:12px;padding:.75rem 1rem;font-size:.82rem;font-weight:700;margin-bottom:1.25rem;text-align:left;line-height:1.5}
+    /* Quiz UI */
+    .quiz-topbar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem 1.1rem;background:var(--surface);border:2.5px solid var(--border);border-radius:14px;margin-bottom:1rem;position:sticky;top:.5rem;z-index:50}
+    .quiz-progress-text{font-size:.82rem;font-weight:800;color:var(--text-light)}
+    .progress-bar-wrap{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+    .progress-bar-fill{height:100%;background:var(--primary);border-radius:4px;transition:width .4s}
+    .timer-display{font-size:1.3rem;font-weight:900;font-family:'Nunito',sans-serif;min-width:62px;text-align:right;transition:color .3s}
+    .timer-display.warn{color:#f59e0b}
+    .timer-display.danger{color:var(--danger);animation:pulse-red .6s infinite alternate}
+    @keyframes pulse-red{from{opacity:1}to{opacity:.5}}
+    .question-card{background:var(--surface);border:2.5px solid var(--border);border-radius:18px;padding:1.75rem;margin-bottom:1rem}
+    .q-text{font-size:1.05rem;font-weight:800;line-height:1.55;margin-bottom:1.25rem;color:var(--text)}
+    .option-label{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 1rem;border:2.5px solid var(--border);border-radius:12px;margin-bottom:.5rem;cursor:pointer;font-weight:700;font-size:.9rem;transition:border-color .12s,background .12s}
+    .option-label:hover{border-color:var(--primary);background:var(--accent-light)}
+    .option-label input{margin-top:.1rem;width:17px;height:17px;accent-color:var(--primary);flex-shrink:0}
+    .option-label.selected{border-color:var(--primary);background:var(--accent-light)}
+    .option-label.correct{border-color:var(--success);background:#58cc0218;color:var(--success)}
+    .option-label.wrong{border-color:var(--danger);background:#ff4b4b18;color:var(--danger)}
+    .sa-input{width:100%;padding:.85rem 1rem;border:2.5px solid var(--input-border);border-radius:12px;font-family:inherit;font-size:.95rem;font-weight:700;background:var(--bg);color:var(--text);outline:none;resize:vertical;min-height:90px}
+    .sa-input:focus{border-color:var(--primary)}
+    .nav-row{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+    /* Results */
+    .result-card{background:var(--surface);border:2.5px solid var(--border);border-radius:20px;padding:2rem;max-width:600px;margin:0 auto}
+    .score-circle{width:120px;height:120px;border-radius:50%;border:6px solid var(--primary);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-family:'Nunito',sans-serif}
+    .score-val{font-size:2.2rem;font-weight:900;line-height:1;color:var(--primary)}
+    .score-of{font-size:.72rem;font-weight:800;color:var(--text-light)}
+    .result-q-card{border:2.5px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:.75rem}
+    .result-q-text{font-weight:800;font-size:.92rem;margin-bottom:.6rem}
+    .result-ans{font-size:.83rem;font-weight:700;padding:.35rem .7rem;border-radius:8px;margin-top:.35rem;display:inline-block}
+    .result-ans.correct-ans{background:#58cc0222;color:var(--success)}
+    .result-ans.wrong-ans{background:#ff4b4b18;color:var(--danger)}
+    .result-ans.teacher-ans{background:var(--surface2);color:var(--text-mid)}
+    /* Waiting */
+    .waiting-card{text-align:center;padding:4rem 2rem;max-width:400px;margin:60px auto}
+    .waiting-spinner{width:56px;height:56px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1.25rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Pre-start screen (info + join lobby) -->
+    <div id="prestart-screen" class="quiz-shell">
+      <div class="prestart-card">
+        <div class="quiz-icon">📝</div>
+        <h2 id="ps-title">Loading…</h2>
+        <div class="q-meta" id="ps-subject"></div>
+        <div class="prestart-stats">
+          <div class="prestart-stat"><div class="prestart-stat-val" id="ps-qcount">—</div><div class="prestart-stat-lbl">Questions</div></div>
+          <div class="prestart-stat"><div class="prestart-stat-val" id="ps-timer">—</div><div class="prestart-stat-lbl">Minutes</div></div>
+        </div>
+        <div class="warn-banner">⚠️ This quiz monitors tab activity. Switching tabs or windows will be flagged and reported to your teacher.</div>
+        <button class="btn btn-primary" id="begin-btn" style="width:100%;padding:.85rem">✋ Join Lobby</button>
+        <button class="btn btn-secondary" style="width:100%;margin-top:.5rem;padding:.7rem" onclick="history.back()">← Go Back</button>
+      </div>
+    </div>
+
+    <!-- Lobby waiting screen (after joining, before teacher starts) -->
+    <div id="lobby-screen" class="quiz-shell" style="display:none">
+      <div class="waiting-card">
+        <div style="font-size:3rem;margin-bottom:1rem">🏫</div>
+        <h3 style="font-size:1.3rem;font-weight:900;margin-bottom:.5rem">You're in the Lobby!</h3>
+        <p style="color:var(--text-light);font-weight:600;font-size:.9rem;margin-bottom:1.25rem">Waiting for your teacher to start the quiz. All students will begin at the same time.</p>
+        <div style="background:var(--surface2);border-radius:12px;padding:.85rem 1.2rem;font-size:.85rem;font-weight:700;color:var(--text-mid);margin-bottom:1.5rem">
+          📝 <span id="lb-title"></span><br>
+          <span style="font-weight:600;color:var(--text-light);font-size:.8rem" id="lb-meta"></span>
+        </div>
+        <div class="waiting-spinner"></div>
+        <p style="font-size:.78rem;color:var(--text-light);font-weight:600;margin-top:.75rem">Stay on this page — don't switch tabs!</p>
+      </div>
+    </div>
+
+    <!-- Quiz taking screen (hidden initially) -->
+    <div id="quiz-screen" class="quiz-shell" style="display:none">
+      <div class="quiz-topbar">
+        <div class="quiz-progress-text" id="q-progress">Question 1 of 10</div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill" style="width:10%"></div></div>
+        <div class="timer-display" id="timer-display">30:00</div>
+      </div>
+      <div id="question-area"></div>
+      <div class="nav-row">
+        <button class="btn btn-secondary" id="prev-btn">← Previous</button>
+        <button class="btn btn-primary" id="next-btn">Next →</button>
+        <button class="btn btn-primary hidden" id="submit-btn" style="background:#58cc02;border-color:#3a8c00">✓ Submit Quiz</button>
+      </div>
+    </div>
+
+    <!-- Waiting screen -->
+    <div id="waiting-screen" class="quiz-shell" style="display:none">
+      <div class="waiting-card">
+        <div class="waiting-spinner"></div>
+        <h3 style="font-size:1.3rem;font-weight:900;margin-bottom:.5rem">Submitted!</h3>
+        <p style="color:var(--text-light);font-weight:600;font-size:.9rem">Waiting for your teacher to close the quiz. Your results will appear shortly.</p>
+      </div>
+    </div>
+
+    <!-- Results screen -->
+    <div id="results-screen" class="quiz-shell" style="display:none">
+      <div class="result-card">
+        <h2 style="text-align:center;font-size:1.5rem;font-weight:900;margin-bottom:1.25rem">Quiz Results</h2>
+        <div class="score-circle">
+          <div class="score-val" id="res-score">—</div>
+          <div class="score-of" id="res-of">/ — pts</div>
+        </div>
+        <div style="text-align:center;font-size:.88rem;font-weight:700;color:var(--text-light);margin-bottom:1.5rem" id="res-pct"></div>
+        <div id="res-questions" style="display:none">
+          <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);margin-bottom:.75rem">Question Review</div>
+          <div id="res-q-list"></div>
+        </div>
+        <div style="display:flex;gap:.75rem;margin-top:1.5rem;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="location.href='/static/pages/student/index.html'">← Dashboard</button>
+          <button class="btn btn-primary" onclick="location.href='/static/pages/student/quizzes.html'">My Quizzes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    import { QuizSocket } from '/static/js/ws.js';
+    requireAuth(['student']);
+
+    const token = getToken();
+    const user = getUser();
+
+    let quizId = null;
+    let quiz = null;
+    let questions = [];
+    let answers = {};   // question_id -> answer string(s)
+    let currentIdx = 0;
+    let timerInterval = null;
+    let secondsLeft = 0;
+    let socket = null;
+    let submitted = false;
+
+    function toast(msg, type='success') {
+      const c = document.getElementById('toast-container');
+      const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+      c.appendChild(t); setTimeout(() => t.remove(), 4000);
+    }
+
+    async function api(path, opts={}) {
+      const res = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || 'Failed');
+      return data;
+    }
+
+    function show(screenId) {
+      ['prestart-screen','lobby-screen','quiz-screen','waiting-screen','results-screen'].forEach(id => {
+        document.getElementById(id).style.display = id === screenId ? 'block' : 'none';
+      });
+    }
+
+    // ── Load quiz ──
+    const params = new URLSearchParams(location.search);
+    quizId = params.get('id');
+    const joinCode = params.get('code');
+
+    async function loadQuiz() {
+      try {
+        if (joinCode) {
+          const info = await api(`/api/quizzes/join/${joinCode}`);
+          quizId = info.quiz_id;
+          history.replaceState({}, '', `?id=${quizId}`);
+        }
+        quiz = await api(`/api/quizzes/${quizId}/take`);
+        questions = quiz.questions || [];
+        document.getElementById('ps-title').textContent = quiz.title;
+        document.getElementById('ps-subject').textContent = quiz.subject;
+        document.getElementById('ps-qcount').textContent = questions.length;
+        document.getElementById('ps-timer').textContent = quiz.timer_minutes;
+      } catch(e) {
+        document.getElementById('ps-title').textContent = 'Quiz Not Found';
+        toast(e.message, 'error');
+      }
+    }
+    loadQuiz();
+
+    // ── Join lobby ──
+    document.getElementById('begin-btn').addEventListener('click', () => {
+      if (!questions.length) { toast('Quiz not loaded yet', 'error'); return; }
+      // Show lobby screen and connect WS — quiz starts on teacher signal
+      document.getElementById('lb-title').textContent = quiz.title;
+      document.getElementById('lb-meta').textContent = `${quiz.subject} · ${questions.length} questions · ${quiz.timer_minutes} min`;
+      show('lobby-screen');
+      connectWs();
+    });
+
+    // ── Timer ──
+    function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        secondsLeft--;
+        updateTimerDisplay();
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          autoSubmit();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(secondsLeft / 60);
+      const s = secondsLeft % 60;
+      const el = document.getElementById('timer-display');
+      el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      el.className = 'timer-display';
+      if (secondsLeft <= 60) el.classList.add('danger');
+      else if (secondsLeft <= 120) el.classList.add('warn');
+    }
+
+    // ── Question rendering ──
+    function renderQuestion() {
+      const q = questions[currentIdx];
+      const area = document.getElementById('question-area');
+      const total = questions.length;
+      const progress = Math.round(((currentIdx + 1) / total) * 100);
+      document.getElementById('q-progress').textContent = `Question ${currentIdx+1} of ${total}`;
+      document.getElementById('progress-fill').style.width = `${progress}%`;
+
+      const isLast = currentIdx === total - 1;
+      document.getElementById('next-btn').classList.toggle('hidden', isLast);
+      document.getElementById('submit-btn').classList.toggle('hidden', !isLast);
+      document.getElementById('prev-btn').disabled = currentIdx === 0;
+
+      if (q.type === 'mcq') {
+        const saved = answers[q.id] || [];
+        area.innerHTML = `
+          <div class="question-card">
+            <div class="q-text">${currentIdx+1}. ${escHtml(q.text)}</div>
+            ${(q.options || []).map((opt, oi) => {
+              const isChecked = saved.includes(String(oi));
+              return `<label class="option-label${isChecked?' selected':''}">
+                <input type="radio" name="mcq-opt" value="${oi}" ${isChecked?'checked':''}>
+                <span>${escHtml(opt)}</span>
+              </label>`;
+            }).join('')}
+          </div>`;
+        area.querySelectorAll('input[type=radio]').forEach(inp => {
+          inp.addEventListener('change', () => {
+            answers[q.id] = [inp.value];
+            area.querySelectorAll('.option-label').forEach((l,i) => {
+              l.classList.toggle('selected', String(i) === inp.value);
+            });
+          });
+        });
+      } else {
+        const saved = answers[q.id] || '';
+        area.innerHTML = `
+          <div class="question-card">
+            <div class="q-text">${currentIdx+1}. ${escHtml(q.text)}</div>
+            <textarea class="sa-input" id="sa-ans" placeholder="Type your answer…">${escHtml(saved)}</textarea>
+          </div>`;
+        document.getElementById('sa-ans').addEventListener('input', e => {
+          answers[q.id] = e.target.value;
+        });
+      }
+    }
+
+    document.getElementById('prev-btn').addEventListener('click', () => {
+      if (currentIdx > 0) { currentIdx--; renderQuestion(); }
+    });
+    document.getElementById('next-btn').addEventListener('click', () => {
+      if (currentIdx < questions.length - 1) { currentIdx++; renderQuestion(); }
+    });
+    document.getElementById('submit-btn').addEventListener('click', () => {
+      if (!confirm('Submit quiz? You cannot change answers after submitting.')) return;
+      submitQuiz(false);
+    });
+
+    async function submitQuiz(auto=false) {
+      if (submitted) return;
+      submitted = true;
+      clearInterval(timerInterval);
+      const payload = {
+        answers: questions.map(q => ({
+          question_id: q.id,
+          answer: q.type === 'mcq' ? (answers[q.id] || []) : [answers[q.id] || ''],
+        })),
+        auto_submitted: auto,
+      };
+      try {
+        const result = await api(`/api/quizzes/${quizId}/submit`, { method: 'POST', body: JSON.stringify(payload) });
+        socket?.send({ type: 'student_submit', student_id: user?.id });
+        // If quiz shows answers immediately, show results; else wait
+        if (result.show_answers !== false && result.results) {
+          showResults(result);
+        } else {
+          show('waiting-screen');
+        }
+      } catch(e) {
+        submitted = false;
+        toast(e.message || 'Submit failed', 'error');
+      }
+    }
+
+    function autoSubmit() {
+      toast('Time is up! Auto-submitting…', 'error');
+      submitQuiz(true);
+    }
+
+    // ── WebSocket (lobby start + cheat detection + quiz close) ──
+    function connectWs() {
+      socket = new QuizSocket(quizId, (msg) => {
+        if (msg.type === 'quiz_already_started') {
+          toast('This quiz has already started. Late joining is not allowed.', 'error');
+          setTimeout(() => location.href = '/static/pages/student/quizzes.html', 2500);
+        } else if (msg.type === 'quiz_start') {
+          // Teacher fired the start — all students begin simultaneously
+          quizActive = true;
+          show('quiz-screen');
+          secondsLeft = quiz.timer_minutes * 60;
+          startTimer();
+          renderQuestion();
+        } else if (msg.type === 'quiz_close') {
+          if (!submitted) {
+            toast('Quiz closed by teacher. Auto-submitting…', 'error');
+            submitQuiz(true);
+          } else {
+            fetchAndShowResults();
+          }
+        }
+      });
+      socket.send({ type: 'student_join', student_id: user?.id, name: user?.name });
+    }
+
+    async function fetchAndShowResults() {
+      try {
+        const result = await api(`/api/quizzes/${quizId}/my-result`);
+        showResults(result);
+      } catch {
+        show('results-screen');
+        document.getElementById('res-score').textContent = '—';
+        document.getElementById('res-of').textContent = 'Results available soon';
+      }
+    }
+
+    function showResults(result) {
+      show('results-screen');
+      document.getElementById('res-score').textContent = result.score ?? '—';
+      document.getElementById('res-of').textContent = `/ ${result.total_points ?? '—'} pts`;
+      const pct = result.total_points ? Math.round((result.score / result.total_points) * 100) : 0;
+      document.getElementById('res-pct').textContent = `${pct}% · ${result.auto_submitted ? 'Auto-submitted' : 'Submitted'}`;
+
+      if (result.results && result.results.length) {
+        document.getElementById('res-questions').style.display = 'block';
+        document.getElementById('res-q-list').innerHTML = result.results.map((r, i) => {
+          const correct = r.is_correct;
+          const q = questions[i] || {};
+          const yourAns = Array.isArray(r.student_answer) ? r.student_answer.join(', ') : r.student_answer;
+          const corrAns = Array.isArray(r.correct_answer) ? r.correct_answer.join(', ') : r.correct_answer;
+          return `
+            <div class="result-q-card">
+              <div class="result-q-text">${i+1}. ${escHtml(q.text || r.question_text || '')}</div>
+              <div><span class="result-ans ${correct?'correct-ans':'wrong-ans'}">Your answer: ${escHtml(yourAns || '(blank)')}</span></div>
+              ${!correct ? `<div><span class="result-ans teacher-ans">Correct: ${escHtml(corrAns)}</span></div>` : ''}
+            </div>`;
+        }).join('');
+      }
+    }
+
+    // ── Anti-cheat: tab visibility (only during active quiz, not lobby) ──
+    let quizActive = false;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && quizActive && !submitted) {
+        socket?.send({ type: 'cheat_flag', student_id: user?.id, timestamp: new Date().toISOString() });
+      }
+    });
+
+    function escHtml(str) {
+      return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>

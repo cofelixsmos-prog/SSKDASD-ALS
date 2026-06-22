@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scholarly — Teacher Dashboard</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sb-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+      <h1>Scholarly</h1>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-label">Teacher</div>
+        <button class="nav-item active">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Dashboard
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/attendance.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>Attendance
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/quizzes.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>Quizzes
+        </button>
+        <button class="nav-item" onclick="location.href='/static/pages/teacher/reports.html'">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>Reports
+        </button>
+      </div>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="btn btn-icon btn-secondary" id="sidebar-toggle" style="display:none">☰</button>
+      <h2>Dashboard</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="theme-label">☀️</span><button class="theme-toggle" id="theme-toggle"></button><span class="theme-label">🌙</span>
+      <div style="position:relative">
+        <button class="profile-trigger" id="profile-trigger">
+          <div class="profile-avatar" id="topbar-avatar">TC</div>
+          <span class="profile-name" id="topbar-name">Teacher</span>
+          <span style="font-size:.6rem">▼</span>
+        </button>
+        <div class="profile-dropdown hidden" id="profile-dropdown">
+          <div class="dd-header"><div class="dd-name" id="dd-name"></div><div class="dd-class">Teacher</div></div>
+          <button class="dd-item" id="dd-theme-btn">🎨 Toggle Theme</button>
+          <button class="dd-item danger" id="dd-logout-btn">🚪 Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">My Batches</div>
+        <div class="stat-value" id="stat-batches">—</div>
+        <div class="stat-sub">Assigned to me</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sessions Today</div>
+        <div class="stat-value" id="stat-today">—</div>
+        <div class="stat-sub">Recorded today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Sessions</div>
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-sub">All time</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">Quick Actions</div></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="location.href='/static/pages/teacher/attendance.html'">Take Attendance</button>
+        <button class="btn btn-secondary" onclick="location.href='/static/pages/teacher/quizzes.html'">My Quizzes</button>
+        <button class="btn btn-secondary" onclick="location.href='/static/pages/teacher/reports.html'">View Reports</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><div class="card-title">My Batches</div></div>
+      <div id="batches-list"><div class="loading">Loading…</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Recent Attendance Sessions</div>
+        <button class="btn btn-secondary btn-sm" onclick="location.href='/static/pages/teacher/attendance.html'">View All</button>
+      </div>
+      <div id="recent-sessions"><div class="loading">Loading…</div></div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { getToken, getUser, logout } from '/static/js/auth.js';
+    import { requireAuth } from '/static/js/guard.js';
+    requireAuth(['teacher', 'admin']);
+
+    const token = getToken();
+    const user = getUser();
+
+    const html = document.documentElement;
+    html.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+    const toggleTheme = () => { const n = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; html.setAttribute('data-theme', n); localStorage.setItem('theme', n); };
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('dd-theme-btn').addEventListener('click', toggleTheme);
+    document.getElementById('dd-logout-btn').addEventListener('click', logout);
+    if (user) {
+      document.getElementById('topbar-name').textContent = user.name;
+      document.getElementById('dd-name').textContent = user.name;
+      document.getElementById('topbar-avatar').textContent = user.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    }
+    document.getElementById('profile-trigger').addEventListener('click', () => document.getElementById('profile-dropdown').classList.toggle('hidden'));
+    document.addEventListener('click', e => { if (!e.target.closest('#profile-trigger')) document.getElementById('profile-dropdown').classList.add('hidden'); });
+    const st = document.getElementById('sidebar-toggle');
+    if (window.innerWidth <= 768) st.style.display = 'flex';
+    st.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    async function api(path) {
+      const res = await fetch(path, { headers: { Authorization: `Bearer ${token}` } });
+      return res.json();
+    }
+
+    async function load() {
+      const [batches, sessions] = await Promise.all([
+        api('/api/attendance/my-batches'),
+        api('/api/attendance/sessions'),
+      ]);
+
+      document.getElementById('stat-batches').textContent = batches.length;
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('stat-today').textContent = sessions.filter(s => s.date === today).length;
+      document.getElementById('stat-total').textContent = sessions.length;
+
+      // Batches list
+      const batchesEl = document.getElementById('batches-list');
+      if (!batches.length) {
+        batchesEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📚</div><div class="empty-text">No batches assigned yet</div><div class="empty-sub">Ask admin to assign you to a batch</div></div>';
+      } else {
+        batchesEl.innerHTML = batches.map(b => `
+          <div class="student-card" onclick="location.href='/static/pages/teacher/attendance.html'">
+            <div class="student-avatar" style="border-radius:10px">📚</div>
+            <div class="student-info"><div class="s-name">${b.name}</div><div class="s-meta">Click to take attendance</div></div>
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text-light);fill:none;stroke-width:2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>`).join('');
+      }
+
+      // Recent sessions
+      const sessEl = document.getElementById('recent-sessions');
+      const recent = sessions.slice(0, 5);
+      if (!recent.length) {
+        sessEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No sessions yet</div></div>';
+      } else {
+        const batchMap = Object.fromEntries(batches.map(b => [b.id, b.name]));
+        sessEl.innerHTML = recent.map(s => {
+          const pct = s.student_count ? Math.round(s.present_count / s.student_count * 100) : 0;
+          return `
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1.5px solid var(--border)">
+            <div style="flex:1">
+              <div style="font-size:.88rem;font-weight:700">${batchMap[s.batch_id] || s.batch_id} — Sec ${s.section}</div>
+              <div style="font-size:.75rem;color:var(--text-light);font-weight:600">${new Date(s.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
+            </div>
+            <span class="badge badge-green">${s.present_count}P</span>
+            <span class="badge badge-red">${s.absent_count}A</span>
+            <span class="badge badge-muted">${pct}%</span>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
