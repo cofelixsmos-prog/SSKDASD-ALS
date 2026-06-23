@@ -7,6 +7,7 @@ from dependencies import get_current_user, require_role
 from models.user import User
 from models.batch import Batch, batch_teachers
 from models.attendance import AttendanceSession, AttendanceRecord
+from models.notification import Notification
 from schemas.attendance import AttendanceSubmit, AttendanceSessionOut
 from typing import Optional
 import uuid
@@ -121,6 +122,31 @@ async def submit_attendance(
         ))
 
     await db.commit()
+
+    # Fire low-attendance notifications to parents
+    absent_ids = [r.student_id for r in body.records if r.status == "absent"]
+    for student_id in absent_ids:
+        all_recs = await db.execute(
+            select(AttendanceRecord).join(AttendanceSession, AttendanceRecord.session_id == AttendanceSession.id)
+            .where(AttendanceRecord.student_id == student_id)
+        )
+        recs = all_recs.scalars().all()
+        total = len(recs)
+        present = sum(1 for r in recs if r.status in ("present", "late"))
+        pct = round(present / total * 100) if total else 0
+        if pct < 75 and total >= 3:
+            parent_res = await db.execute(select(User).where(User.linked_student_id == student_id, User.role == "parent"))
+            parent = parent_res.scalar_one_or_none()
+            student_res = await db.execute(select(User).where(User.id == student_id))
+            student = student_res.scalar_one_or_none()
+            if parent and student:
+                db.add(Notification(
+                    id=str(uuid.uuid4()),
+                    user_id=parent.id,
+                    message=f"⚠️ {student.name}'s attendance has dropped to {pct}% (below 75%). Please ensure regular attendance.",
+                ))
+    await db.commit()
+
     return {"ok": True, "session_id": session.id}
 
 

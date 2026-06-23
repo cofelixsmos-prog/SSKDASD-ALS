@@ -162,11 +162,12 @@
     }
 
     window.launchQuiz = async function(id, title) {
-      if (!confirm(`Launch "${title}"? Students can join immediately.`)) return;
+      if (!confirm(`Launch "${title}"? Students will join a lobby and wait for you to click Start.`)) return;
       try {
         const r = await api(`/api/quizzes/${id}/launch`, { method: 'POST' });
-        toast(`Launched! Code: ${r.code}`);
-        await load();
+        toast(`Launched! Code: ${r.code} — opening monitor…`);
+        // Go straight to the live monitor / lobby
+        setTimeout(() => location.href = `/static/pages/teacher/monitor.html?id=${id}`, 700);
       } catch(e) { toast(e.message, 'error'); }
     };
 

@@ -359,3 +359,69 @@ a{color:inherit;text-decoration:none}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* ═══════════ MASCOT & DUOLINGO XP SYSTEM ═══════════ */
+
+/* Owl mascot SVG container */
+.mascot-wrap{display:flex;flex-direction:column;align-items:center;gap:.35rem;user-select:none}
+.mascot-owl{width:72px;height:72px;animation:owlIdle 3.5s ease-in-out infinite}
+.mascot-owl.mascot-happy{animation:owlHappy .6s cubic-bezier(.34,1.56,.64,1) both}
+.mascot-owl.mascot-sad{animation:owlSad .5s ease both}
+.mascot-speech{background:var(--surface);border:2.5px solid var(--border);border-radius:12px 12px 12px 4px;padding:.45rem .8rem;font-size:.78rem;font-weight:800;color:var(--text);max-width:180px;text-align:center;position:relative;animation:popIn .3s cubic-bezier(.34,1.56,.64,1) both}
+.mascot-speech::before{content:'';position:absolute;bottom:-8px;left:12px;border:5px solid transparent;border-top-color:var(--border)}
+.mascot-speech::after{content:'';position:absolute;bottom:-5px;left:14px;border:4px solid transparent;border-top-color:var(--surface)}
+
+@keyframes owlIdle{0%,100%{transform:translateY(0) rotate(0deg)}30%{transform:translateY(-6px) rotate(-2deg)}60%{transform:translateY(-3px) rotate(1deg)}}
+@keyframes owlHappy{0%{transform:scale(.8) rotate(-10deg)}30%{transform:scale(1.2) rotate(12deg)}60%{transform:scale(.95) rotate(-5deg)}80%{transform:scale(1.05) rotate(3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes owlSad{0%{transform:scale(1) rotate(0)}40%{transform:scale(.9) rotate(-8deg)}70%{transform:scale(1) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+
+/* XP streak bar (Duolingo style) */
+.xp-bar-wrap{background:var(--surface);border:2.5px solid var(--border);border-radius:14px;padding:.75rem 1rem;display:flex;align-items:center;gap:.85rem;margin-bottom:1rem;animation:cardEntrance .4s cubic-bezier(.34,1.56,.64,1) both}
+.xp-flame{font-size:1.4rem;animation:flamePulse 1.8s ease-in-out infinite}
+@keyframes flamePulse{0%,100%{transform:scale(1) rotate(-3deg)}50%{transform:scale(1.15) rotate(3deg)}}
+.xp-info{flex:1}
+.xp-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light)}
+.xp-track{height:10px;background:var(--surface2);border-radius:6px;overflow:hidden;margin-top:.3rem}
+.xp-fill{height:100%;background:linear-gradient(90deg,#ff9600,#ffd000);border-radius:6px;transition:width .8s cubic-bezier(.34,1.56,.64,1)}
+.xp-count{font-size:.88rem;font-weight:900;color:var(--text);white-space:nowrap}
+.streak-badge{display:inline-flex;align-items:center;gap:.25rem;background:#ff9600;color:#fff;border-radius:10px;padding:.2rem .55rem;font-size:.72rem;font-weight:900;border-bottom:3px solid #cc7200;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both}
+.streak-badge.gold{background:linear-gradient(135deg,#ffd000,#ff9600);border-bottom-color:#b86000}
+.streak-badge.diamond{background:linear-gradient(135deg,#06b6d4,#4a7dff);border-bottom-color:#0284c7}
+
+/* Score trend mini-chart */
+.mini-chart{display:flex;align-items:flex-end;gap:3px;height:40px;padding:2px 0}
+.mini-bar{flex:1;border-radius:3px 3px 0 0;min-width:8px;max-width:20px;transition:height .5s cubic-bezier(.34,1.56,.64,1)}
+.mini-bar:hover{opacity:.75}
+
+/* Quiz history card (student view) */
+.quiz-hist-card{border:2.5px solid var(--border);border-radius:16px;padding:.9rem 1.1rem;margin-bottom:.6rem;display:flex;align-items:center;gap:.75rem;cursor:pointer;transition:border-color .15s,transform .15s;animation:cardEntrance .4s cubic-bezier(.34,1.56,.64,1) both}
+.quiz-hist-card:hover{border-color:var(--primary);transform:translateY(-2px)}
+.quiz-hist-score-ring{width:52px;height:52px;border-radius:50%;border:4px solid var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem;font-weight:900;color:var(--primary);transition:border-color .15s}
+.quiz-hist-score-ring.ring-good{border-color:var(--success);color:var(--success)}
+.quiz-hist-score-ring.ring-ok{border-color:var(--warning);color:var(--warning)}
+.quiz-hist-score-ring.ring-bad{border-color:var(--danger);color:var(--danger)}
+.quiz-hist-info{flex:1;min-width:0}
+.quiz-hist-title{font-size:.9rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quiz-hist-meta{font-size:.75rem;font-weight:600;color:var(--text-light);margin-top:.1rem}
+.quiz-hist-right{display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0}
+
+/* Correct/wrong feedback flash on review cards */
+@keyframes flashGreen{0%,100%{background:transparent}30%{background:rgba(88,204,2,.15)}}
+@keyframes flashRed{0%,100%{background:transparent}30%{background:rgba(255,75,75,.12)}}
+.review-q-card.correct.just-appeared{animation:flashGreen .5s ease}
+.review-q-card.wrong.just-appeared{animation:flashRed .5s ease}
+
+/* Stagger entrance for quiz history list */
+.quiz-hist-card:nth-child(1){animation-delay:.05s}
+.quiz-hist-card:nth-child(2){animation-delay:.1s}
+.quiz-hist-card:nth-child(3){animation-delay:.15s}
+.quiz-hist-card:nth-child(4){animation-delay:.2s}
+.quiz-hist-card:nth-child(5){animation-delay:.25s}
+.quiz-hist-card:nth-child(6){animation-delay:.3s}
+
+/* Float animation for lobby/waiting screens */
+@keyframes floatBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes btnGlow{0%,100%{box-shadow:0 0 0 0 rgba(74,125,255,0)}50%{box-shadow:0 0 0 8px rgba(74,125,255,.12)}}
+
+/* XP pop on stat card (number goes brighter briefly) */
+@keyframes xpPop{0%{transform:scale(1)}40%{transform:scale(1.3);color:#ff9600}70%{transform:scale(.95)}100%{transform:scale(1)}}

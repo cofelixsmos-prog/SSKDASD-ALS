@@ -71,6 +71,37 @@
     <!-- Child card -->
     <div class="card" id="child-card" style="padding:1.1rem 1.5rem;margin-bottom:1rem"><div class="loading">Loading…</div></div>
 
+    <!-- Mascot panel -->
+    <div class="mascot-panel" id="mascot-parent-panel" style="display:none">
+      <div class="mascot-wrap">
+        <svg class="mascot-owl" id="parent-owl" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="40" cy="50" rx="22" ry="24" fill="#1b2e4b"/>
+          <ellipse cx="18" cy="54" rx="10" ry="14" fill="#152440" transform="rotate(-15 18 54)"/>
+          <ellipse cx="62" cy="54" rx="10" ry="14" fill="#152440" transform="rotate(15 62 54)"/>
+          <ellipse cx="40" cy="56" rx="13" ry="14" fill="#eef2ff"/>
+          <circle cx="40" cy="30" r="20" fill="#1b2e4b"/>
+          <polygon points="28,12 24,2 32,10" fill="#152440"/>
+          <polygon points="52,12 56,2 48,10" fill="#152440"/>
+          <circle cx="32" cy="30" r="8" fill="#fff"/>
+          <circle cx="48" cy="30" r="8" fill="#fff"/>
+          <circle cx="33" cy="30" r="5" fill="#4a7dff"/>
+          <circle cx="49" cy="30" r="5" fill="#4a7dff"/>
+          <circle cx="34" cy="29" r="2" fill="#000"/>
+          <circle cx="50" cy="29" r="2" fill="#000"/>
+          <circle cx="35" cy="27" r="1.5" fill="#fff" opacity=".8"/>
+          <circle cx="51" cy="27" r="1.5" fill="#fff" opacity=".8"/>
+          <polygon points="40,33 36,38 44,38" fill="#f59e0b"/>
+          <ellipse cx="33" cy="73" rx="7" ry="4" fill="#f59e0b" transform="rotate(-10 33 73)"/>
+          <ellipse cx="47" cy="73" rx="7" ry="4" fill="#f59e0b" transform="rotate(10 47 73)"/>
+        </svg>
+        <div class="mascot-speech" id="parent-owl-speech">Loading…</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:.85rem;font-weight:800;margin-bottom:.25rem" id="parent-owl-headline">Your child's progress</div>
+        <div style="font-size:.8rem;font-weight:600;color:var(--text-light)" id="parent-owl-sub">Review attendance and quiz results below.</div>
+      </div>
+    </div>
+
     <!-- Warning banner -->
     <div id="warning-banner" style="display:none;background:#ff4b4b18;border:2px solid #ff4b4b44;border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1rem;font-size:.88rem;font-weight:700;color:var(--danger)">
       ⚠️ Your child's attendance is below 75%. Please ensure regular attendance.
@@ -201,7 +232,8 @@
         const pctEl = document.getElementById('stat-att');
         pctEl.textContent = summary.attendance_pct + '%';
         pctEl.style.color = summary.attendance_pct < 75 ? 'var(--danger)' : summary.attendance_pct >= 90 ? 'var(--success)' : 'var(--primary)';
-        document.getElementById('stat-present').textContent = summary.total_classes;
+        const presentCount = summary.total_classes > 0 ? Math.round(summary.attendance_pct / 100 * summary.total_classes) : 0;
+        document.getElementById('stat-present').textContent = presentCount;
         document.getElementById('stat-total').textContent = summary.total_classes;
         if (summary.attendance_pct < 75 && summary.total_classes > 0) {
           document.getElementById('warning-banner').style.display = 'block';
@@ -213,6 +245,34 @@
           document.getElementById('stat-quiz-sub').textContent = q.title;
         }
         animateStats();
+
+        // Mascot
+        const owlPanel = document.getElementById('mascot-parent-panel');
+        owlPanel.style.display = 'flex';
+        const att = summary.attendance_pct;
+        const owl = document.getElementById('parent-owl');
+        const speech = document.getElementById('parent-owl-speech');
+        const headline = document.getElementById('parent-owl-headline');
+        const sub = document.getElementById('parent-owl-sub');
+        if (att >= 90) {
+          speech.textContent = 'Excellent attendance! 🏆';
+          headline.textContent = `${summary.child_name} is doing great!`;
+          sub.textContent = `${att}% attendance. Keep up the great work!`;
+          owl.style.animation = 'owlHappy .6s cubic-bezier(.34,1.56,.64,1) both, owlIdle 3.5s ease-in-out 0.7s infinite';
+        } else if (att >= 75) {
+          speech.textContent = 'Looking good! 👍';
+          headline.textContent = `${summary.child_name}'s progress`;
+          sub.textContent = `${att}% attendance — on track!`;
+        } else if (summary.total_classes > 0) {
+          speech.textContent = 'Attendance needs work! ⚠️';
+          headline.textContent = `Action needed for ${summary.child_name}`;
+          sub.textContent = `Only ${att}% attendance — below the 75% requirement.`;
+          owl.style.animation = 'owlSad .5s ease both, owlIdle 3.5s ease-in-out 0.6s infinite';
+        } else {
+          speech.textContent = 'Hello! 👋';
+          headline.textContent = `Welcome, ${summary.child_name}'s parent`;
+          sub.textContent = 'No attendance recorded yet.';
+        }
 
         // Notifications badge
         if (summary.notifications_unread_count > 0) {

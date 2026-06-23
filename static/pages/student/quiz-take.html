@@ -80,7 +80,30 @@
     <!-- Lobby waiting screen (after joining, before teacher starts) -->
     <div id="lobby-screen" class="quiz-shell" style="display:none">
       <div class="waiting-card">
-        <div style="font-size:3rem;margin-bottom:1rem;animation:floatBounce 2s ease-in-out infinite">🏫</div>
+        <!-- Owl mascot in lobby -->
+        <div class="mascot-wrap" style="margin-bottom:1rem">
+          <svg style="width:90px;height:90px;animation:owlIdle 3s ease-in-out infinite" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="40" cy="50" rx="22" ry="24" fill="#1b2e4b"/>
+            <ellipse cx="18" cy="54" rx="10" ry="14" fill="#152440" transform="rotate(-15 18 54)"/>
+            <ellipse cx="62" cy="54" rx="10" ry="14" fill="#152440" transform="rotate(15 62 54)"/>
+            <ellipse cx="40" cy="56" rx="13" ry="14" fill="#eef2ff"/>
+            <circle cx="40" cy="30" r="20" fill="#1b2e4b"/>
+            <polygon points="28,12 24,2 32,10" fill="#152440"/>
+            <polygon points="52,12 56,2 48,10" fill="#152440"/>
+            <circle cx="32" cy="30" r="8" fill="#fff"/>
+            <circle cx="48" cy="30" r="8" fill="#fff"/>
+            <circle cx="33" cy="30" r="5" fill="#4a7dff"/>
+            <circle cx="49" cy="30" r="5" fill="#4a7dff"/>
+            <circle cx="34" cy="29" r="2" fill="#000"/>
+            <circle cx="50" cy="29" r="2" fill="#000"/>
+            <circle cx="35" cy="27" r="1.5" fill="#fff" opacity=".8"/>
+            <circle cx="51" cy="27" r="1.5" fill="#fff" opacity=".8"/>
+            <polygon points="40,33 36,38 44,38" fill="#f59e0b"/>
+            <ellipse cx="33" cy="73" rx="7" ry="4" fill="#f59e0b" transform="rotate(-10 33 73)"/>
+            <ellipse cx="47" cy="73" rx="7" ry="4" fill="#f59e0b" transform="rotate(10 47 73)"/>
+          </svg>
+          <div class="mascot-speech">Waiting for teacher… 🕐</div>
+        </div>
         <h3 style="font-size:1.3rem;font-weight:900;margin-bottom:.5rem">You're in the Lobby!</h3>
         <p style="color:var(--text-light);font-weight:600;font-size:.9rem;margin-bottom:1.25rem">Waiting for your teacher to start the quiz. All students will begin at the same time.</p>
         <div style="background:var(--surface2);border-radius:12px;padding:.85rem 1.2rem;font-size:.85rem;font-weight:700;color:var(--text-mid);margin-bottom:1.5rem">

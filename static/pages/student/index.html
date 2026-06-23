@@ -52,6 +52,41 @@
 
   <main class="app-main">
 
+    <!-- Mascot XP bar -->
+    <div class="xp-bar-wrap" id="xp-bar-wrap" style="display:none">
+      <div class="mascot-wrap">
+        <svg class="mascot-owl" id="dash-owl" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <ellipse cx="40" cy="50" rx="22" ry="24" fill="#1b2e4b"/>
+          <ellipse cx="18" cy="54" rx="10" ry="14" fill="#152440" transform="rotate(-15 18 54)"/>
+          <ellipse cx="62" cy="54" rx="10" ry="14" fill="#152440" transform="rotate(15 62 54)"/>
+          <ellipse cx="40" cy="56" rx="13" ry="14" fill="#eef2ff"/>
+          <circle cx="40" cy="30" r="20" fill="#1b2e4b"/>
+          <polygon points="28,12 24,2 32,10" fill="#152440"/>
+          <polygon points="52,12 56,2 48,10" fill="#152440"/>
+          <circle cx="32" cy="30" r="8" fill="#fff"/>
+          <circle cx="48" cy="30" r="8" fill="#fff"/>
+          <circle cx="33" cy="30" r="5" fill="#4a7dff"/>
+          <circle cx="49" cy="30" r="5" fill="#4a7dff"/>
+          <circle cx="34" cy="29" r="2" fill="#000"/>
+          <circle cx="50" cy="29" r="2" fill="#000"/>
+          <circle cx="35" cy="27" r="1.5" fill="#fff" opacity=".8"/>
+          <circle cx="51" cy="27" r="1.5" fill="#fff" opacity=".8"/>
+          <polygon points="40,33 36,38 44,38" fill="#f59e0b"/>
+          <ellipse cx="33" cy="73" rx="7" ry="4" fill="#f59e0b" transform="rotate(-10 33 73)"/>
+          <ellipse cx="47" cy="73" rx="7" ry="4" fill="#f59e0b" transform="rotate(10 47 73)"/>
+        </svg>
+      </div>
+      <div style="flex:1">
+        <div class="xp-label" id="dash-xp-label">Scholar Level 1</div>
+        <div style="display:flex;align-items:center;gap:.5rem;margin:.25rem 0">
+          <div class="xp-flame">🔥</div>
+          <div style="flex:1"><div class="xp-track"><div class="xp-fill" id="dash-xp-fill" style="width:0%"></div></div></div>
+          <div class="xp-count" id="dash-xp-count">0 XP</div>
+        </div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--text-light)" id="dash-owl-msg">Keep attending classes! 🦉</div>
+      </div>
+    </div>
+
     <!-- Low attendance warning -->
     <div class="hidden" id="warning-banner" style="background:var(--danger-bg);border:2px solid rgba(255,75,75,.25);border-radius:14px;padding:.85rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.6rem;font-size:.88rem;font-weight:700;color:var(--danger)">
       ⚠️ Your attendance is below 75%. Please attend classes regularly.
@@ -149,6 +184,24 @@
           document.getElementById('warning-banner').classList.remove('hidden');
           document.getElementById('warning-banner').style.display = 'flex';
         }
+
+        // XP bar — attendance-based XP
+        const xpWrap = document.getElementById('xp-bar-wrap');
+        xpWrap.style.display = 'flex';
+        const attXp = s.present * 10; // 10 XP per day present
+        const level = Math.floor(attXp / 100) + 1;
+        const xpInLevel = attXp % 100;
+        document.getElementById('dash-xp-label').textContent = `Level ${level} Scholar`;
+        document.getElementById('dash-xp-count').textContent = attXp + ' XP';
+        setTimeout(() => { document.getElementById('dash-xp-fill').style.width = xpInLevel + '%'; }, 400);
+
+        const pct = s.percentage;
+        const msgs = pct >= 90 ? ["Perfect attendance! 🏆", "You're unstoppable! 🔥"] :
+                     pct >= 75 ? ["Great job! Keep it up 👍", "You're on track! 🎯"] :
+                     ["Let's improve attendance! 💪", "You can do it! 🦉"];
+        document.getElementById('dash-owl-msg').textContent = msgs[Math.floor(Math.random() * msgs.length)];
+        const owl = document.getElementById('dash-owl');
+        if (pct >= 80) { owl.classList.add('mascot-happy'); }
 
         const list = document.getElementById('recent-records');
         if (!data.records.length) {
