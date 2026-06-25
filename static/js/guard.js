@@ -1,4 +1,5 @@
 import { getToken, getUser, redirectByRole } from './auth.js';
+import('/static/js/tilt.js').catch(() => {});
 
 export function requireAuth(allowedRoles = []) {
   const token = getToken();
