@@ -165,6 +165,115 @@ async def export_students_csv(
     )
 
 
+@router.get("/reports/students/export-ppt")
+async def export_students_ppt_route(
+    batch_id: str = Query(None),
+    section: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_teacher(current_user)
+    from services.ppt_service import generate_report_pptx
+
+    batch_ids = await get_teacher_batch_ids(current_user, db)
+    if not batch_ids:
+        batch_ids = []
+    if batch_id:
+        if batch_id not in batch_ids:
+            raise HTTPException(403, "Not your batch")
+        batch_ids = [batch_id]
+
+    q = select(User).where(User.role == "student")
+    if batch_ids:
+        q = q.where(User.batch_id.in_(batch_ids))
+    if section:
+        q = q.where(User.section == section)
+    result = await db.execute(q.order_by(User.name))
+    students = result.scalars().all()
+
+    student_data = []
+    batch_name_cache_ppt: dict[str, str] = {}
+
+    for s in students:
+        att_result = await db.execute(
+            select(AttendanceRecord).where(AttendanceRecord.student_id == s.id)
+        )
+        records = att_result.scalars().all()
+        total = len(records)
+        present = sum(1 for r in records if r.status in ("present", "late"))
+        att_pct = round((present / total) * 100) if total else 0
+
+        sub_result = await db.execute(
+            select(QuizSubmission).where(QuizSubmission.student_id == s.id)
+            .order_by(QuizSubmission.submitted_at)
+        )
+        subs = sub_result.scalars().all()
+        pcts = [round((sub.score / sub.total_points) * 100) for sub in subs if sub.total_points]
+        quiz_avg = round(sum(pcts) / len(pcts)) if pcts else None
+        trend = None
+        if len(pcts) >= 4:
+            half = len(pcts) // 2
+            early = sum(pcts[:half]) / half
+            late_avg = sum(pcts[half:]) / (len(pcts) - half)
+            trend = round(late_avg - early)
+
+        bname = None
+        if s.batch_id:
+            if s.batch_id not in batch_name_cache_ppt:
+                br = await db.execute(select(Batch.name).where(Batch.id == s.batch_id))
+                batch_name_cache_ppt[s.batch_id] = br.scalar_one_or_none() or ""
+            bname = batch_name_cache_ppt[s.batch_id]
+
+        student_data.append({
+            "name": s.name,
+            "batch_name": bname,
+            "section": s.section,
+            "attendance_pct": att_pct,
+            "quiz_avg": quiz_avg,
+            "quizzes_taken": len(subs),
+            "trend": trend,
+        })
+
+    qz = select(Quiz)
+    if batch_ids:
+        qz = qz.where(Quiz.batch_id.in_(batch_ids))
+    if current_user.role == "teacher":
+        qz = qz.where(Quiz.created_by == current_user.id)
+    qresult = await db.execute(
+        qz.options(selectinload(Quiz.submissions)).order_by(Quiz.created_at.desc())
+    )
+    quizzes = qresult.scalars().all()
+
+    quiz_data = []
+    for quiz in quizzes:
+        qpcts = [round((s.score / s.total_points) * 100) for s in quiz.submissions if s.total_points]
+        quiz_data.append({
+            "title": quiz.title,
+            "subject": quiz.subject,
+            "created_at": quiz.created_at.isoformat(),
+            "avg_score": round(sum(qpcts) / len(qpcts)) if qpcts else None,
+            "highest": max(qpcts) if qpcts else None,
+            "lowest": min(qpcts) if qpcts else None,
+        })
+
+    display_batch = None
+    if batch_id and batch_id in batch_name_cache_ppt:
+        display_batch = batch_name_cache_ppt[batch_id]
+
+    pptx_bytes = generate_report_pptx(student_data, quiz_data, display_batch, section)
+
+    filename = "scholarly_report.pptx"
+    if display_batch:
+        safe = display_batch.replace(" ", "_")[:30]
+        filename = f"scholarly_{safe}.pptx"
+
+    return StreamingResponse(
+        io.BytesIO(pptx_bytes),
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.get("/reports/students/{student_id}")
 async def report_student_detail(
     student_id: str,
